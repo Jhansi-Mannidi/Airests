@@ -96,16 +96,16 @@ export default function Home() {
         <ThemeToggle />
       </header>
 
-      <main className="flex w-full flex-1 flex-col px-4 py-6 md:px-6 md:py-8">
+      <main className="w-full px-4 py-6 md:px-6 md:py-8">
         <div>
           <h1 className="font-sans text-2xl font-semibold tracking-tight text-foreground md:text-3xl">Airests</h1>
           <p className="mt-1 text-sm text-muted-foreground">Open a surface, or jump straight to a screen.</p>
         </div>
 
-        <Stagger className="mt-6 grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" delay={0.07}>
+        <Stagger className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" delay={0.07}>
           {surfaces.map((surface) => (
             <StaggerItem key={surface.title} hover className="h-full">
-              <section className="flex h-full min-h-0 flex-col rounded-2xl border border-border bg-card p-5">
+              <section className="flex h-full flex-col rounded-2xl border border-border bg-card p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent">
