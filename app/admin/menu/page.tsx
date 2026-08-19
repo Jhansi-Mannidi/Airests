@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
@@ -15,6 +15,14 @@ import { Switch } from '@/components/ui/switch'
 import { downloadCsv, headerIndex, parseCsv } from '@/lib/export'
 
 export default function MenuBuilderPage() {
+  return (
+    <Suspense>
+      <MenuBuilderContent />
+    </Suspense>
+  )
+}
+
+function MenuBuilderContent() {
   const searchParams = useSearchParams()
   const itemParam = searchParams.get('item')
   const recipes = useRecipes()

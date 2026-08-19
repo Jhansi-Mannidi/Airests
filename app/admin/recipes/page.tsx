@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
@@ -22,6 +22,14 @@ import { cn } from '@/lib/utils'
 import { Plus, Trash2, Search } from 'lucide-react'
 
 export default function RecipesPage() {
+  return (
+    <Suspense>
+      <RecipesContent />
+    </Suspense>
+  )
+}
+
+function RecipesContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const itemParam = searchParams.get('item')
