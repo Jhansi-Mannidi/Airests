@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { AdminTopbar } from '@/components/admin/admin-topbar'
 import { failedEvents } from '@/lib/mock-data'
-import { CheckCircle2, RotateCw, Wrench, Sparkles } from 'lucide-react'
+import { toast } from 'sonner'
+import { RotateCw, Wrench, Sparkles, CheckCircle2, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const tabs = ['Payment Adapter', 'Delivery Aggregator Adapter'] as const
@@ -16,8 +17,15 @@ const healthByTab: Record<(typeof tabs)[number], { status: string; tone: string;
 export default function IntegrationsPage() {
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]>('Payment Adapter')
   const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set())
+  const [query, setQuery] = useState('')
+  const [testing, setTesting] = useState(false)
   const eventType = activeTab === 'Payment Adapter' ? 'Payment Webhook' : 'Delivery Adapter'
-  const events = failedEvents.filter((e) => e.type === eventType && !resolvedIds.has(e.id))
+  const events = failedEvents.filter((e) => {
+    if (e.type !== eventType || resolvedIds.has(e.id)) return false
+    const q = query.trim().toLowerCase()
+    if (!q) return true
+    return `${e.type} ${e.reason} ${e.timestamp}`.toLowerCase().includes(q)
+  })
   const health = healthByTab[activeTab]
 
   return (
@@ -50,9 +58,18 @@ export default function IntegrationsPage() {
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">{health.provider}</p>
               </div>
-              <button className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-secondary">
-                <RotateCw className="size-3.5" />
-                Test Connection
+              <button
+                onClick={() => {
+                  setTesting(true)
+                  window.setTimeout(() => {
+                    setTesting(false)
+                    toast.success('Connection healthy', { description: health.provider })
+                  }, 600)
+                }}
+                className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-secondary"
+              >
+                <RotateCw className={cn('size-3.5', testing && 'animate-spin')} />
+                {testing ? 'Testing…' : 'Test Connection'}
               </button>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-4 border-t border-border pt-4 sm:grid-cols-3">
@@ -73,9 +90,20 @@ export default function IntegrationsPage() {
 
           {/* Exceptions table */}
           <section className="rounded-xl border border-border bg-card">
-            <div className="border-b border-border p-4">
-              <h2 className="text-sm font-semibold text-foreground">Exceptions Needing Manual Review</h2>
-              <p className="text-xs text-muted-foreground">{events.length} open exception{events.length === 1 ? '' : 's'}</p>
+            <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-foreground">Exceptions Needing Manual Review</h2>
+                <p className="text-xs text-muted-foreground">{events.length} open exception{events.length === 1 ? '' : 's'}</p>
+              </div>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search exceptions…"
+                  className="w-full rounded-md border border-border bg-background py-1.5 pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring sm:w-56"
+                />
+              </div>
             </div>
 
             {events.length === 0 ? (
@@ -105,7 +133,13 @@ export default function IntegrationsPage() {
                         <td className="hidden px-4 py-2.5 font-mono tabular-nums text-foreground md:table-cell">{ev.retries}</td>
                         <td className="px-4 py-2.5">
                           <div className="flex gap-2">
-                            <button className="flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-secondary">
+                            <button
+                              onClick={() => {
+                                toast.success('Retry queued', { description: ev.reason })
+                                setResolvedIds((prev) => new Set(prev).add(ev.id))
+                              }}
+                              className="flex items-center gap-1 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-secondary"
+                            >
                               <RotateCw className="size-3.5" />
                               Retry
                             </button>

@@ -3,6 +3,7 @@
 import { UtensilsCrossed, ShoppingBag, Bike, Check, RotateCcw } from 'lucide-react'
 import type { KitchenTicket } from '@/lib/mock-data'
 import { cn } from '@/lib/utils'
+import { m } from 'framer-motion'
 
 const orderTypeIcon = {
   'dine-in': UtensilsCrossed,
@@ -10,15 +11,34 @@ const orderTypeIcon = {
   delivery: Bike,
 } as const
 
-export function TicketCard({ ticket, onBump }: { ticket: KitchenTicket; onBump?: () => void }) {
+export function TicketCard({
+  ticket,
+  onBump,
+  onHold,
+  onFire,
+  onRecall,
+  held,
+}: {
+  ticket: KitchenTicket
+  onBump?: () => void
+  onHold?: () => void
+  onFire?: () => void
+  onRecall?: () => void
+  held?: boolean
+}) {
   const Icon = orderTypeIcon[ticket.orderType]
   const escalation =
     ticket.ageMinutes > 10 ? 'danger' : ticket.ageMinutes >= 5 ? 'warning' : 'success'
 
   return (
-    <div
+    <m.div
+      layout
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: held ? 0.7 : 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      whileHover={{ y: -2 }}
       className={cn(
-        'flex flex-col overflow-hidden rounded-xl border bg-card shadow-sm',
+        'flex flex-col overflow-hidden rounded-xl border bg-card shadow-surface',
         escalation === 'danger' && 'border-danger/60 ring-1 ring-danger/30',
         escalation === 'warning' && 'border-warning/50',
         escalation === 'success' && 'border-border',
@@ -54,20 +74,39 @@ export function TicketCard({ ticket, onBump }: { ticket: KitchenTicket; onBump?:
       </ul>
 
       <div className="flex items-center gap-2 border-t border-border/80 p-2.5">
-        <button
-          onClick={onBump}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-        >
-          <Check className="size-4" />
-          Bump
-        </button>
-        <button
-          aria-label="Recall"
-          className="flex size-10 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-secondary"
-        >
-          <RotateCcw className="size-4" />
-        </button>
+        {onRecall ? (
+          <button
+            onClick={onRecall}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
+          >
+            <RotateCcw className="size-4" />
+            Reopen
+          </button>
+        ) : (
+          <>
+            <button
+              onClick={onBump}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+            >
+              <Check className="size-4" />
+              Bump
+            </button>
+            <button
+              onClick={onHold}
+              className="rounded-lg border border-border px-2.5 py-2 text-xs font-semibold text-muted-foreground hover:bg-secondary"
+            >
+              {held ? 'Release' : 'Hold'}
+            </button>
+            <button
+              onClick={onFire}
+              aria-label="Re-fire"
+              className="flex size-10 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-secondary"
+            >
+              <RotateCcw className="size-4" />
+            </button>
+          </>
+        )}
       </div>
-    </div>
+    </m.div>
   )
 }

@@ -1,0 +1,38 @@
+import type { LucideIcon } from 'lucide-react'
+import {
+  LayoutDashboard,
+  MapPin,
+  UtensilsCrossed,
+  Users,
+  BarChart3,
+  Plug,
+  Settings,
+  CreditCard,
+  ChefHat,
+  MonitorSmartphone,
+  Map,
+  Percent,
+  Receipt,
+  Activity,
+  Contact,
+  Sparkles,
+} from 'lucide-react'
+
+export const adminNavItems: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/locations', label: 'Locations', icon: MapPin },
+  { href: '/admin/devices', label: 'Devices & Registers', icon: MonitorSmartphone },
+  { href: '/admin/menu', label: 'Menu', icon: UtensilsCrossed },
+  { href: '/admin/recipes', label: 'Recipes', icon: ChefHat },
+  { href: '/admin/floor', label: 'Floor & Tables', icon: Map },
+  { href: '/admin/pricing', label: 'Tax & Discounts', icon: Percent },
+  { href: '/admin/staff', label: 'Staff', icon: Users },
+  { href: '/admin/customers', label: 'Customers', icon: Contact },
+  { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
+  { href: '/admin/receipts', label: 'Receipts', icon: Receipt },
+  { href: '/admin/integrations', label: 'Integrations', icon: Plug },
+  { href: '/admin/reliability', label: 'Backups & Monitoring', icon: Activity },
+  { href: '/admin/growth', label: 'Post-Launch', icon: Sparkles },
+  { href: '/admin/settings', label: 'Settings', icon: Settings },
+  { href: '/admin/billing', label: 'Billing', icon: CreditCard },
+]

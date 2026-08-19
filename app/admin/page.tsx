@@ -1,3 +1,5 @@
+'use client'
+
 import { AdminTopbar } from '@/components/admin/admin-topbar'
 import { KpiCard } from '@/components/admin/kpi-card'
 import { SalesTrendChart } from '@/components/admin/sales-trend-chart'
@@ -5,6 +7,7 @@ import { ConnectivityChip } from '@/components/shared/status-pill'
 import { brand, failedEvents, topItems } from '@/lib/mock-data'
 import { DollarSign, ShoppingBag, TrendingUp, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
+import { Stagger, StaggerItem } from '@/components/motion/primitives'
 
 export default function AdminDashboardPage() {
   const totalSales = brand.locations.reduce((sum, l) => sum + l.salesToday, 0)
@@ -31,9 +34,10 @@ export default function AdminDashboardPage() {
                 View all
               </Link>
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+            <Stagger className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5" delay={0.05}>
               {brand.locations.map((loc) => (
-                <div key={loc.id} className="rounded-xl border border-border bg-card p-4">
+              <StaggerItem key={loc.id} hover>
+                <div className="h-full rounded-xl border border-border bg-card p-4 shadow-surface hover:shadow-hover">
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-sm font-medium leading-tight text-foreground">{loc.name}</p>
                     <ConnectivityChip state={loc.connectivity} />
@@ -48,8 +52,9 @@ export default function AdminDashboardPage() {
                     </div>
                   </div>
                 </div>
+              </StaggerItem>
               ))}
-            </div>
+            </Stagger>
           </section>
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

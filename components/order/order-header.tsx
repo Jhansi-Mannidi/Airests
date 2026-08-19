@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { ArrowLeft, ShoppingBag } from 'lucide-react'
 import { ThemeToggle } from '@/components/shared/theme-toggle'
-import { AppSwitcher } from '@/components/shared/app-switcher'
 import { AirestsMark } from '@/components/shared/airests-mark'
 import { useCart } from '@/components/order/cart-context'
 
@@ -19,7 +18,7 @@ export function OrderHeader({
   const { count } = useCart()
 
   return (
-    <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between border-b border-border bg-card/95 px-3 backdrop-blur-sm md:h-[4.5rem] md:px-8">
+    <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center justify-between border-b border-border/80 bg-card/90 px-3 backdrop-blur-md md:h-[4.5rem] md:px-8">
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <Link href="/order" aria-label="Airests home" className="shrink-0">
           <AirestsMark size="lg" className="hidden sm:flex" />
@@ -44,7 +43,6 @@ export function OrderHeader({
       </div>
       <div className="flex items-center gap-2">
         <ThemeToggle />
-        <AppSwitcher variant="ghost-icon" />
         <Link
           href="/order/cart"
           className="relative flex size-9 items-center justify-center rounded-full text-foreground hover:bg-secondary"

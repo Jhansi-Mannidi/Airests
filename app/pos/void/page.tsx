@@ -16,7 +16,7 @@ export default function VoidPage() {
   const [open, setOpen] = React.useState(true)
 
   return (
-    <div className="flex h-dvh flex-col bg-background font-sans">
+    <div className="pos-canvas flex h-dvh flex-col font-sans">
       <PosTopBar title="Transaction History" backHref="/pos/payment" />
       <main className="flex-1 overflow-y-auto p-6">
         <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-card p-6">

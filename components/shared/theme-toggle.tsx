@@ -19,7 +19,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       variant="outline"
       size="icon"
       aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
-      className={cn('size-9 shrink-0 bg-transparent', className)}
+      className={cn('size-9 shrink-0 rounded-lg bg-transparent', className)}
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
     >
       {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}

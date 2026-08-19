@@ -98,6 +98,10 @@ export const staff = [
 export const roles = ['Server', 'Bartender', 'Host', 'Kitchen', 'Shift Manager', 'General Manager', 'Owner/Admin']
 
 export const permissionMatrix = [
+  { permission: 'Access POS Register', Server: true, Bartender: true, Host: true, Kitchen: true, 'Shift Manager': true, 'General Manager': true, 'Owner/Admin': true },
+  { permission: 'Access Kitchen Display', Server: false, Bartender: true, Host: false, Kitchen: true, 'Shift Manager': true, 'General Manager': true, 'Owner/Admin': true },
+  { permission: 'Admin Access', Server: false, Bartender: false, Host: false, Kitchen: false, 'Shift Manager': false, 'General Manager': true, 'Owner/Admin': true },
+  { permission: 'Preview Guest Ordering', Server: false, Bartender: false, Host: false, Kitchen: false, 'Shift Manager': true, 'General Manager': true, 'Owner/Admin': true },
   { permission: 'Process Refund', Server: false, Bartender: false, Host: false, Kitchen: false, 'Shift Manager': true, 'General Manager': true, 'Owner/Admin': true },
   { permission: 'Apply Discount', Server: true, Bartender: true, Host: false, Kitchen: false, 'Shift Manager': true, 'General Manager': true, 'Owner/Admin': true },
   { permission: 'Void Order', Server: false, Bartender: false, Host: false, Kitchen: false, 'Shift Manager': true, 'General Manager': true, 'Owner/Admin': true },
@@ -105,7 +109,8 @@ export const permissionMatrix = [
   { permission: 'Edit Menu', Server: false, Bartender: false, Host: false, Kitchen: false, 'Shift Manager': false, 'General Manager': true, 'Owner/Admin': true },
   { permission: 'View Reports', Server: false, Bartender: false, Host: false, Kitchen: false, 'Shift Manager': true, 'General Manager': true, 'Owner/Admin': true },
   { permission: 'Manage Staff', Server: false, Bartender: false, Host: false, Kitchen: false, 'Shift Manager': false, 'General Manager': true, 'Owner/Admin': true },
-  { permission: 'Admin Access', Server: false, Bartender: false, Host: false, Kitchen: false, 'Shift Manager': false, 'General Manager': true, 'Owner/Admin': true },
+  { permission: 'Transfer Table / Server', Server: false, Bartender: false, Host: true, Kitchen: false, 'Shift Manager': true, 'General Manager': true, 'Owner/Admin': true },
+  { permission: 'Open Cash Drawer', Server: false, Bartender: true, Host: false, Kitchen: false, 'Shift Manager': true, 'General Manager': true, 'Owner/Admin': true },
 ]
 
 export type ModifierOption = { name: string; priceDelta: number }
@@ -147,7 +152,7 @@ export function getItemDiet(item: MenuItem): DietType {
   return 'non-veg'
 }
 
-export const menuCategories = ['Burgers', 'Bowls', 'Salads', 'Starters', 'Drinks', 'Desserts']
+export const menuCategories = ['Bowls', 'Burgers', 'Salads', 'Starters', 'Drinks', 'Desserts']
 
 const defaultModifierGroupsByCategory: Record<string, ModifierGroup[]> = {
   Burgers: [
@@ -353,6 +358,47 @@ export const menuItems: MenuItem[] = [
     image: '/veggie-burger.png',
   },
   {
+    id: 'mi-29',
+    name: 'Double Cheddar Smash',
+    description: 'Two smashed patties, double cheddar, pickles, special sauce.',
+    price: 14.5,
+    category: 'Burgers',
+    image: '/double-cheddar-smash.png',
+  },
+  {
+    id: 'mi-30',
+    name: 'Patty Melt',
+    description: 'Griddled rye, caramelized onions, swiss, thousand island.',
+    price: 13.5,
+    category: 'Burgers',
+    image: '/patty-melt.png',
+  },
+  {
+    id: 'mi-31',
+    name: 'Impossible Smash',
+    description: 'Plant-based smash patty, cheddar, pickles, house sauce, brioche.',
+    price: 13.95,
+    category: 'Burgers',
+    dietary: ['Vegetarian'],
+    image: '/impossible-smash.png',
+  },
+  {
+    id: 'mi-32',
+    name: 'Breakfast Burger',
+    description: 'Smash patty, fried egg, bacon, American cheese, hash brown.',
+    price: 14.25,
+    category: 'Burgers',
+    image: '/breakfast-burger.png',
+  },
+  {
+    id: 'mi-33',
+    name: 'Kids Cheeseburger',
+    description: 'Single patty, American cheese, ketchup, small bun.',
+    price: 7.95,
+    category: 'Burgers',
+    image: '/kids-cheeseburger.png',
+  },
+  {
     id: 'mi-4',
     name: 'Grilled Chicken Burrito Bowl',
     description: 'Cilantro-lime rice, black beans, grilled chicken, pico, roasted corn.',
@@ -389,6 +435,33 @@ export const menuItems: MenuItem[] = [
     image: '/korean-bbq-bowl.png',
   },
   {
+    id: 'mi-34',
+    name: 'Steak Fajita Bowl',
+    description: 'Grilled skirt steak, peppers, onions, cilantro rice, pico, crema.',
+    price: 15.5,
+    category: 'Bowls',
+    spice: 1,
+    image: '/steak-fajita-bowl.png',
+  },
+  {
+    id: 'mi-35',
+    name: 'Tofu Teriyaki Bowl',
+    description: 'Crispy tofu, steamed rice, broccoli, sesame, teriyaki glaze.',
+    price: 12.75,
+    category: 'Bowls',
+    dietary: ['Vegetarian'],
+    image: '/tofu-teriyaki-bowl.png',
+  },
+  {
+    id: 'mi-36',
+    name: 'Mediterranean Hummus Bowl',
+    description: 'Hummus, cucumber, tomato, olives, feta, warm pita, lemon oil.',
+    price: 11.95,
+    category: 'Bowls',
+    dietary: ['Vegetarian'],
+    image: '/mediterranean-hummus-bowl.png',
+  },
+  {
     id: 'mi-7',
     name: 'Classic Caesar Salad',
     description: 'Romaine, shaved parmesan, garlic croutons, creamy Caesar dressing.',
@@ -422,6 +495,24 @@ export const menuItems: MenuItem[] = [
     category: 'Salads',
     dietary: ['Vegetarian', 'Gluten-Free'],
     image: '/beet-arugula-salad.png',
+  },
+  {
+    id: 'mi-37',
+    name: 'House Garden Salad',
+    description: 'Mixed greens, cucumber, tomato, carrot, balsamic vinaigrette.',
+    price: 8.5,
+    category: 'Salads',
+    dietary: ['Vegetarian', 'Vegan', 'Gluten-Free'],
+    image: '/house-garden-salad.png',
+  },
+  {
+    id: 'mi-38',
+    name: 'Buffalo Chicken Salad',
+    description: 'Crispy buffalo chicken, romaine, blue cheese, celery, ranch.',
+    price: 13.5,
+    category: 'Salads',
+    spice: 2,
+    image: '/buffalo-chicken-salad.png',
   },
   {
     id: 'mi-9',
@@ -466,6 +557,32 @@ export const menuItems: MenuItem[] = [
     category: 'Starters',
     spice: 3,
     image: '/buffalo-wings.png',
+  },
+  {
+    id: 'mi-39',
+    name: 'Onion Rings',
+    description: 'Beer-battered rings, smoked paprika aioli.',
+    price: 7.5,
+    category: 'Starters',
+    dietary: ['Vegetarian'],
+    image: '/onion-rings.png',
+  },
+  {
+    id: 'mi-40',
+    name: 'Queso & Chips',
+    description: 'Skillet queso, pico, pickled jalapeños, warm tortilla chips.',
+    price: 8.95,
+    category: 'Starters',
+    dietary: ['Vegetarian'],
+    image: '/queso-chips.png',
+  },
+  {
+    id: 'mi-41',
+    name: 'Chicken Tenders',
+    description: 'Crispy tenders, house honey mustard, fries.',
+    price: 10.5,
+    category: 'Starters',
+    image: '/chicken-tenders.png',
   },
   {
     id: 'mi-11',
@@ -517,6 +634,33 @@ export const menuItems: MenuItem[] = [
     image: '/sparkling-water-lime.png',
   },
   {
+    id: 'mi-42',
+    name: 'Arnold Palmer',
+    description: 'Half lemonade, half unsweet iced tea.',
+    price: 3.95,
+    category: 'Drinks',
+    dietary: ['Vegan'],
+    image: '/arnold-palmer.png',
+  },
+  {
+    id: 'mi-43',
+    name: 'House Iced Tea',
+    description: 'Black tea, steeped cold, lemon wedge.',
+    price: 2.95,
+    category: 'Drinks',
+    dietary: ['Vegan'],
+    image: '/house-iced-tea.png',
+  },
+  {
+    id: 'mi-44',
+    name: 'Horchata',
+    description: 'Rice milk, cinnamon, vanilla, over ice.',
+    price: 4.25,
+    category: 'Drinks',
+    dietary: ['Vegetarian'],
+    image: '/horchata.png',
+  },
+  {
     id: 'mi-13',
     name: 'Salted Caramel Skillet Cookie',
     description: 'Warm chocolate-chip cookie, vanilla ice cream, salted caramel.',
@@ -549,6 +693,183 @@ export const menuItems: MenuItem[] = [
     category: 'Desserts',
     dietary: ['Vegetarian'],
     image: '/berry-parfait.png',
+  },
+  {
+    id: 'mi-45',
+    name: 'Brownie Sundae',
+    description: 'Warm brownie, vanilla ice cream, chocolate sauce, pecans.',
+    price: 7.25,
+    category: 'Desserts',
+    dietary: ['Vegetarian'],
+    image: '/brownie-sundae.png',
+  },
+  {
+    id: 'mi-46',
+    name: 'Key Lime Pie',
+    description: 'Graham crust, tart lime custard, whipped cream.',
+    price: 6.75,
+    category: 'Desserts',
+    dietary: ['Vegetarian'],
+    image: '/key-lime-pie.png',
+  },
+  {
+    id: 'mi-47',
+    name: 'Texas Chili Burger',
+    description: 'Smash patty, house chili, cheddar, pickled jalapeños, diced onion.',
+    price: 14.75,
+    category: 'Burgers',
+    spice: 2,
+    image: '/smash-burger.png',
+  },
+  {
+    id: 'mi-48',
+    name: 'Blue Cheese Burger',
+    description: 'Angus patty, crumbled blue cheese, caramelized onions, arugula.',
+    price: 14.25,
+    category: 'Burgers',
+    image: '/bbq-bacon-cheeseburger.png',
+  },
+  {
+    id: 'mi-49',
+    name: 'Avocado Ranch Burger',
+    description: 'Smash patty, avocado, ranch, lettuce, tomato, toasted brioche.',
+    price: 13.95,
+    category: 'Burgers',
+    image: '/veggie-burger.png',
+  },
+  {
+    id: 'mi-50',
+    name: 'Western BBQ Smash',
+    description: 'Double smash, onion ring, cheddar, house BBQ, brioche.',
+    price: 14.95,
+    category: 'Burgers',
+    image: '/double-cheddar-smash.png',
+  },
+  {
+    id: 'mi-51',
+    name: 'Truffle Mushroom Melt',
+    description: 'Patty melt on rye, truffle mushrooms, swiss, garlic butter.',
+    price: 15.25,
+    category: 'Burgers',
+    image: '/mushroom-swiss-burger.png',
+  },
+  {
+    id: 'mi-52',
+    name: 'Habanero Smash',
+    description: 'Smash patty, habanero jam, pepper jack, pickled onion.',
+    price: 13.5,
+    category: 'Burgers',
+    spice: 3,
+    image: '/spicy-turkey-burger.png',
+  },
+  {
+    id: 'mi-53',
+    name: 'Chipotle Steak Bowl',
+    description: 'Skirt steak, chipotle rice, black beans, corn, avocado, crema.',
+    price: 15.95,
+    category: 'Bowls',
+    spice: 2,
+    image: '/steak-fajita-bowl.png',
+  },
+  {
+    id: 'mi-54',
+    name: 'Lemon Herb Chicken Bowl',
+    description: 'Grilled chicken, quinoa, cucumber, tomato, feta, lemon herb dressing.',
+    price: 13.25,
+    category: 'Bowls',
+    dietary: ['Gluten-Free'],
+    image: '/burrito-bowl.png',
+  },
+  {
+    id: 'mi-55',
+    name: 'Sweet Potato Grain Bowl',
+    description: 'Roasted sweet potato, farro, kale, pepitas, maple tahini.',
+    price: 12.5,
+    category: 'Bowls',
+    dietary: ['Vegetarian', 'Vegan'],
+    image: '/grain-bowl.png',
+  },
+  {
+    id: 'mi-56',
+    name: 'Coconut Curry Bowl',
+    description: 'Crispy tofu, coconut curry, jasmine rice, cilantro, lime.',
+    price: 13.75,
+    category: 'Bowls',
+    spice: 2,
+    dietary: ['Vegetarian', 'Vegan'],
+    image: '/tofu-teriyaki-bowl.png',
+  },
+  {
+    id: 'mi-57',
+    name: 'Carnitas Bowl',
+    description: 'Slow-cooked pork, cilantro rice, pickled onion, salsa verde.',
+    price: 14.5,
+    category: 'Bowls',
+    spice: 1,
+    image: '/korean-bbq-bowl.png',
+  },
+  {
+    id: 'mi-58',
+    name: 'Falafel Bowl',
+    description: 'Crispy falafel, hummus, cucumber salad, tahini, warm pita.',
+    price: 12.95,
+    category: 'Bowls',
+    dietary: ['Vegetarian', 'Vegan'],
+    image: '/mediterranean-hummus-bowl.png',
+  },
+  {
+    id: 'mi-59',
+    name: 'Garlic Parmesan Fries',
+    description: 'Crispy fries, garlic butter, parmesan, parsley.',
+    price: 7.25,
+    category: 'Starters',
+    dietary: ['Vegetarian'],
+    image: '/loaded-fries.png',
+  },
+  {
+    id: 'mi-60',
+    name: 'Street Corn',
+    description: 'Charred corn, cotija, chili-lime crema, cilantro.',
+    price: 7.95,
+    category: 'Starters',
+    dietary: ['Vegetarian'],
+    image: '/queso-chips.png',
+  },
+  {
+    id: 'mi-61',
+    name: 'Nachos Supreme',
+    description: 'Tortilla chips, queso, pico, jalapeños, crema. Add chicken +3.',
+    price: 11.5,
+    category: 'Starters',
+    dietary: ['Vegetarian'],
+    image: '/queso-chips.png',
+  },
+  {
+    id: 'mi-62',
+    name: 'Fried Pickles',
+    description: 'Dill pickle chips, beer batter, ranch.',
+    price: 7.75,
+    category: 'Starters',
+    dietary: ['Vegetarian'],
+    image: '/onion-rings.png',
+  },
+  {
+    id: 'mi-63',
+    name: 'Pretzel Bites',
+    description: 'Warm salted pretzels, beer cheese dip.',
+    price: 8.25,
+    category: 'Starters',
+    dietary: ['Vegetarian'],
+    image: '/spinach-artichoke-dip.png',
+  },
+  {
+    id: 'mi-64',
+    name: 'Mozzarella Sticks',
+    description: 'Fried mozzarella, house marinara.',
+    price: 8.5,
+    category: 'Starters',
+    dietary: ['Vegetarian'],
+    image: '/crispy-calamari.png',
   },
 ]
 
@@ -755,3 +1076,91 @@ export const loyalty = {
   tier: 'Gold',
   rewardAt: 1500,
 }
+
+export const registers = [
+  { id: 'reg-1', name: 'Register 1', location: 'Downtown', bound: true, lastSeen: 'Just now', version: 'POS 1.4.2' },
+  { id: 'reg-2', name: 'Register 2', location: 'Downtown', bound: true, lastSeen: 'Just now', version: 'POS 1.4.2' },
+  { id: 'reg-3', name: 'Register 1', location: 'Riverside', bound: true, lastSeen: '4 min ago', version: 'POS 1.4.1' },
+  { id: 'reg-4', name: 'Register 1', location: 'Domain', bound: false, lastSeen: 'Never', version: '—' },
+  { id: 'reg-5', name: 'Expo Display', location: 'Downtown', bound: true, lastSeen: '1 min ago', version: 'KDS 1.2.0' },
+]
+
+export const discountsCatalog = [
+  { id: 'd-1', name: 'Open $', type: 'Amount', value: 'Variable', code: 'OPEN$', managerPin: true },
+  { id: 'd-2', name: 'Open %', type: 'Percent', value: 'Variable', code: 'OPEN%', managerPin: true },
+  { id: 'd-3', name: 'Staff Meal', type: 'Percent', value: '50%', code: 'STAFF', managerPin: true },
+  { id: 'd-4', name: 'Loyalty Reward', type: 'Amount', value: '$5.00', code: 'GOLD5', managerPin: false },
+  { id: 'd-5', name: 'Happy Hour', type: 'Percent', value: '15%', code: 'HH15', managerPin: false },
+]
+
+export const customers = [
+  { id: 'cu-1', name: 'Jamie Rodriguez', phone: '(512) 555-0148', email: 'jamie.rodriguez@email.com', orders: 18, lastVisit: 'Today', spend: 412.5 },
+  { id: 'cu-2', name: 'Priya Shah', phone: '(512) 555-0193', email: 'priya.s@email.com', orders: 9, lastVisit: 'Yesterday', spend: 188.2 },
+  { id: 'cu-3', name: 'Alex Morgan', phone: '(512) 555-0111', email: 'alex.morgan@email.com', orders: 41, lastVisit: 'Aug 16', spend: 980.0 },
+  { id: 'cu-4', name: 'Chloe D.', phone: '(512) 555-0177', email: 'chloe.d@email.com', orders: 3, lastVisit: 'Today', spend: 54.75 },
+]
+
+export const cashDrawer = {
+  startingFloat: 200,
+  cashSales: 428.5,
+  paidIn: 40,
+  paidOut: 15,
+  drops: 200,
+  expected: 453.5,
+}
+
+export const printQueue = [
+  { id: 'pq-1', type: 'KOT', target: 'Grill printer', check: 'Table 6', status: 'printed', time: '12:04 PM' },
+  { id: 'pq-2', type: 'KOT', target: 'Expo printer', check: 'Takeout #4471', status: 'retry', time: '12:05 PM' },
+  { id: 'pq-3', type: 'Receipt', target: 'Register 2', check: 'Table 3', status: 'printed', time: '12:09 PM' },
+  { id: 'pq-4', type: 'KOT', target: 'Salad printer', check: 'Table 11', status: 'queued', time: '12:11 PM' },
+]
+
+export const deviceHeartbeats = [
+  { name: 'Register 2', kind: 'POS', status: 'online', latency: '42 ms' },
+  { name: 'Grill KDS', kind: 'Kitchen', status: 'online', latency: '38 ms' },
+  { name: 'Expo KDS', kind: 'Kitchen', status: 'online', latency: '51 ms' },
+  { name: 'Receipt printer', kind: 'Printer', status: 'online', latency: '12 ms' },
+  { name: 'Grill printer', kind: 'Printer', status: 'degraded', latency: '910 ms' },
+  { name: 'Cash drawer', kind: 'Hardware', status: 'online', latency: '—' },
+]
+
+export type InventoryItem = {
+  id: string
+  name: string
+  onHand: number
+  par: number
+  unit: string
+  cost: number
+}
+
+export const inventoryItems: InventoryItem[] = [
+  { id: 'inv-1', name: 'Brioche buns', onHand: 48, par: 60, unit: 'ea', cost: 0.42 },
+  { id: 'inv-2', name: 'Angus smash patties', onHand: 22, par: 80, unit: 'ea', cost: 1.85 },
+  { id: 'inv-3', name: 'Romaine', onHand: 6, par: 12, unit: 'heads', cost: 1.2 },
+  { id: 'inv-4', name: 'Fries', onHand: 18, par: 20, unit: 'lb', cost: 1.1 },
+  { id: 'inv-5', name: 'American cheese', onHand: 40, par: 50, unit: 'slices', cost: 0.12 },
+  { id: 'inv-6', name: 'Swiss cheese', onHand: 18, par: 30, unit: 'slices', cost: 0.18 },
+  { id: 'inv-7', name: 'House sauce', onHand: 12, par: 16, unit: 'oz', cost: 0.18 },
+  { id: 'inv-8', name: 'Pickle chips', onHand: 8, par: 10, unit: 'oz', cost: 0.08 },
+  { id: 'inv-9', name: 'Smoked bacon', onHand: 14, par: 20, unit: 'slices', cost: 0.35 },
+  { id: 'inv-10', name: 'Sautéed mushrooms', onHand: 4, par: 8, unit: 'oz', cost: 0.22 },
+  { id: 'inv-11', name: 'Turkey patties', onHand: 30, par: 40, unit: 'ea', cost: 1.6 },
+  { id: 'inv-12', name: 'Black bean patties', onHand: 16, par: 24, unit: 'ea', cost: 1.1 },
+  { id: 'inv-13', name: 'Garlic aioli', onHand: 10, par: 12, unit: 'oz', cost: 0.2 },
+  { id: 'inv-14', name: 'Caesar dressing', onHand: 9, par: 12, unit: 'oz', cost: 0.16 },
+  { id: 'inv-15', name: 'Parmesan', onHand: 5, par: 8, unit: 'oz', cost: 0.4 },
+  { id: 'inv-16', name: 'Garlic croutons', onHand: 7, par: 10, unit: 'oz', cost: 0.14 },
+]
+
+export const reservations = [
+  { time: '5:30 PM', name: 'Chen party', covers: 4, notes: 'Patio' },
+  { time: '6:00 PM', name: 'Webb', covers: 2, notes: '—' },
+  { time: '7:15 PM', name: 'Nair', covers: 6, notes: 'High chair' },
+]
+
+export const giftCards = [
+  { number: '•••• 4412', balance: 75, status: 'Active' },
+  { number: '•••• 8821', balance: 0, status: 'Redeemed' },
+  { number: '•••• 0194', balance: 40, status: 'Active' },
+]

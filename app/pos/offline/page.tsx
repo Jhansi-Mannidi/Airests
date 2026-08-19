@@ -10,7 +10,7 @@ const queue = [
 
 export default function OfflinePage() {
   return (
-    <div className="flex h-dvh flex-col bg-background font-sans">
+    <div className="pos-canvas flex h-dvh flex-col font-sans">
       <PosTopBar title="Start an Order" backHref="/pos" connectivity="offline" pendingSync={queue.length} />
       <OfflineBanner pendingCount={queue.length} />
 

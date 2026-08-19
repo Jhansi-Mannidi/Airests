@@ -15,9 +15,9 @@ export default function OpengraphImage() {
           alignItems: 'flex-start',
           justifyContent: 'center',
           padding: '80px 96px',
-          background: '#0B1220',
+          background: '#1C1612',
           backgroundImage:
-            'radial-gradient(circle at 82% 18%, rgba(45,212,191,0.22) 0%, rgba(45,212,191,0) 55%), radial-gradient(circle at 8% 92%, rgba(45,212,191,0.14) 0%, rgba(45,212,191,0) 50%)',
+            'radial-gradient(circle at 82% 18%, rgba(255,122,53,0.28) 0%, rgba(255,122,53,0) 55%), radial-gradient(circle at 8% 92%, rgba(255,250,237,0.12) 0%, rgba(255,250,237,0) 50%)',
         }}
       >
         <div
@@ -28,13 +28,13 @@ export default function OpengraphImage() {
             width: 88,
             height: 88,
             borderRadius: 20,
-            background: 'linear-gradient(135deg, #2DD4BF 0%, #0F6B5C 100%)',
+            background: 'linear-gradient(135deg, #FF7A35 0%, #E5651C 100%)',
             marginBottom: 40,
           }}
         >
           <svg width="46" height="46" viewBox="0 0 24 24" fill="none">
-            <path d="M7.1 19 12 5.2 16.9 19" stroke="#06231D" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M9.3 13.6h5.4" stroke="#06231D" strokeWidth="2.3" strokeLinecap="round" />
+            <path d="M7.1 19 12 5.2 16.9 19" stroke="#FFFFFF" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M9.3 13.6h5.4" stroke="#FFFFFF" strokeWidth="2.3" strokeLinecap="round" />
           </svg>
         </div>
         <div
@@ -43,7 +43,7 @@ export default function OpengraphImage() {
             fontSize: 76,
             fontWeight: 700,
             letterSpacing: '-0.02em',
-            color: '#F1F5F9',
+            color: '#F9F9F9',
           }}
         >
           Airests
@@ -54,7 +54,7 @@ export default function OpengraphImage() {
             marginTop: 20,
             fontSize: 30,
             fontWeight: 500,
-            color: '#94A3B8',
+            color: '#B8A99A',
             maxWidth: 820,
           }}
         >

@@ -1,269 +1,620 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { AnimatePresence, LayoutGroup, m } from 'framer-motion'
+import { Calendar, Download, Search } from 'lucide-react'
 import { AdminTopbar } from '@/components/admin/admin-topbar'
-import { staff } from '@/lib/mock-data'
-import { Download, Calendar } from 'lucide-react'
+import { Pressable, Stagger, StaggerItem } from '@/components/motion/primitives'
+import { brand } from '@/lib/mock-data'
+import { downloadCsvSections, fileStamp, money, printReport } from '@/lib/export'
 import { cn } from '@/lib/utils'
 
-const reportTabs = ['Daily Sales', 'Tax Summary', 'Tips', 'Voids & Refunds', 'Server Performance', 'X Report', 'Z Report']
+const reportTabs = [
+  'Daily Sales',
+  'Tax Summary',
+  'Tips',
+  'Voids & Refunds',
+  'Server Performance',
+  'X Report',
+  'Z Report',
+  'Terminal Reconciliation',
+] as const
 
-const kpis = [
-  { label: 'Gross Sales', value: '$23,908.45' },
-  { label: 'Net Sales', value: '$21,204.10' },
-  { label: 'Tax Collected', value: '$1,872.30' },
-  { label: 'Tips', value: '$3,614.88' },
-  { label: 'Voids', value: '$284.50' },
-]
+type ReportTab = (typeof reportTabs)[number]
+type DateRange = 'Today' | 'Yesterday' | 'Last 7 Days'
 
-// Deterministic, always-positive per-server figures derived from a simple
-// spread curve rather than a linear decrement (which would go negative
-// once the roster grows past a handful of servers/bartenders).
-const serverRows = staff
-  .filter((s) => s.role === 'Server' || s.role === 'Bartender')
-  .map((s, i) => {
-    const wave = Math.abs(Math.sin(i * 1.7))
-    return {
-      name: s.name,
-      orders: Math.round(14 + wave * 26),
-      sales: Math.round((620 + wave * 1450) * 100) / 100,
-      tips: Math.round((85 + wave * 260) * 100) / 100,
-      avgCheck: Math.round((32 + wave * 26) * 10) / 10,
-      voids: i % 4 === 1 ? 2 : i % 5 === 0 ? 1 : 0,
-    }
-  })
-
-const recentTransactions = [
-  { id: '#4479', time: '12:11 PM', server: 'Nina Osei', type: 'Takeout', total: 18.5, tender: 'Card' },
-  { id: '#4478', time: '12:09 PM', server: 'Devon Shaw', type: 'Bar Tab', total: 33.0, tender: 'Card' },
-  { id: '#4477', time: '12:04 PM', server: 'Maria Alvarez', type: 'Dine-In', total: 148.75, tender: 'Split' },
-  { id: '#4476', time: '11:58 PM', server: 'Chloe Dawson', type: 'Dine-In', total: 41.2, tender: 'Card' },
-  { id: '#4475', time: '11:49 AM', server: 'Jordan Pierce', type: 'Delivery', total: 27.4, tender: 'Online' },
-  { id: '#4474', time: '11:47 AM', server: 'Chloe Dawson', type: 'Takeout', total: 27.5, tender: 'Cash' },
-  { id: '#4473', time: '11:41 AM', server: 'Maria Alvarez', type: 'Dine-In', total: 212.4, tender: 'Card' },
-]
-
-const dateRanges = ['Today', 'Yesterday', 'Last 7 Days'] as const
-const rangeFactor: Record<(typeof dateRanges)[number], number> = {
+const rangeFactor: Record<DateRange, number> = {
   Today: 1,
   Yesterday: 0.86,
   'Last 7 Days': 6.4,
 }
-const rangeLabel: Record<(typeof dateRanges)[number], string> = {
+
+const rangeFullLabel: Record<DateRange, string> = {
   Today: 'Today — Aug 19, 2026',
   Yesterday: 'Yesterday — Aug 18, 2026',
   'Last 7 Days': 'Aug 13 – Aug 19, 2026',
 }
 
+/** Locked to the Reports mockup for Today, then scaled for other ranges. */
+const dailySalesSeed = [
+  { name: 'Maria Alvarez', orders: 42, sales: 2480.5, tips: 412.5, voids: 0 },
+  { name: 'Jordan Pierce', orders: 38, sales: 2195.2, tips: 365.8, voids: 2 },
+  { name: 'Devon Shaw', orders: 31, sales: 1688.4, tips: 288.2, voids: 0 },
+  { name: 'Chloe Dawson', orders: 36, sales: 1920.15, tips: 310.15, voids: 1 },
+  { name: 'Ryan Ostrowski', orders: 28, sales: 1344.8, tips: 198.4, voids: 1 },
+  { name: 'Nina Osei', orders: 33, sales: 1566.25, tips: 246.8, voids: 0 },
+  { name: 'Aisha Brooks', orders: 22, sales: 980.4, tips: 142.1, voids: 1 },
+  { name: 'Tomas Reyes', orders: 24, sales: 890.14, tips: 155.08, voids: 0 },
+  { name: 'Leah Fontaine', orders: 19, sales: 696.2, tips: 113.1, voids: 0 },
+]
+
+const recentTransactions = [
+  { id: '#4479', time: '12:11 PM', server: 'Nina Osei', type: 'Takeout', total: 18.5, tender: 'Card' },
+  { id: '#4478', time: '12:09 PM', server: 'Devon Shaw', type: 'Bar Tab', total: 33.0, tender: 'Card' },
+  { id: '#4477', time: '12:04 PM', server: 'Maria Alvarez', type: 'Dine-In', total: 148.75, tender: 'Split' },
+  { id: '#4476', time: '11:58 AM', server: 'Chloe Dawson', type: 'Dine-In', total: 41.2, tender: 'Card' },
+  { id: '#4475', time: '11:49 AM', server: 'Jordan Pierce', type: 'Delivery', total: 27.4, tender: 'Online' },
+  { id: '#4474', time: '11:47 AM', server: 'Chloe Dawson', type: 'Takeout', total: 27.5, tender: 'Cash' },
+  { id: '#4473', time: '11:41 AM', server: 'Maria Alvarez', type: 'Dine-In', total: 212.4, tender: 'Card' },
+  { id: '#4472', time: '11:36 AM', server: 'Ryan Ostrowski', type: 'Bar Tab', total: 46.0, tender: 'Card' },
+  { id: '#4471', time: '11:28 AM', server: 'Aisha Brooks', type: 'Takeout', total: 22.15, tender: 'Cash' },
+]
+
+const taxSeed = brand.locations.map((loc, index) => {
+  const taxable = Math.round(loc.salesToday * 0.94 * 100) / 100
+  const exempt = Math.round((loc.salesToday - taxable) * 100) / 100
+  const tax = Math.round(taxable * 0.0825 * 100) / 100
+  return {
+    location: loc.name.replace('Riverside Grill — ', ''),
+    taxable,
+    exempt,
+    tax,
+    rate: index === 4 ? '8.00%' : '8.25%',
+  }
+})
+
+const xReportSeed = [
+  { terminal: 'Register 1', tenders: 86, cash: 214.5, card: 1840.2, tips: 312.4, variance: 0 },
+  { terminal: 'Register 2', tenders: 112, cash: 188.0, card: 2410.75, tips: 418.9, variance: 0 },
+  { terminal: 'Online / 3P', tenders: 41, cash: 0, card: 980.4, tips: 44.2, variance: 0 },
+]
+
+const zReportSeed = [
+  { bucket: 'Food', net: 9840.22, tax: 811.82, tips: 0 },
+  { bucket: 'Beverage', net: 2210.4, tax: 182.36, tips: 0 },
+  { bucket: 'Alcohol', net: 576.05, tax: 47.52, tips: 0 },
+  { bucket: 'Tips (declared)', net: 0, tax: 0, tips: 2232.13 },
+]
+
+const terminalSeed = [
+  { batch: '#4418', terminal: 'Register 1 · Downtown', auth: 2054.7, captured: 2054.7, tips: 312.4, variance: 0 },
+  { batch: '#4419', terminal: 'Register 2 · Downtown', auth: 2829.65, captured: 2829.65, tips: 418.9, variance: 0 },
+  { batch: '#4420', terminal: 'Online hosted fields', auth: 980.4, captured: 968.15, tips: 44.2, variance: -12.25 },
+]
+
+function scale(n: number, factor: number) {
+  return Math.round(n * factor * 100) / 100
+}
+
+function matchesQuery(haystack: string, query: string) {
+  const q = query.trim().toLowerCase()
+  if (!q) return true
+  return haystack.toLowerCase().includes(q)
+}
+
 export default function ReportsPage() {
-  const [activeTab, setActiveTab] = useState('Daily Sales')
-  const [range, setRange] = useState<(typeof dateRanges)[number]>('Today')
+  const [activeTab, setActiveTab] = useState<ReportTab>('Daily Sales')
+  const [range, setRange] = useState<DateRange>('Today')
+  const [query, setQuery] = useState('')
   const factor = rangeFactor[range]
+  const period = rangeFullLabel[range]
 
-  const scaledRows = serverRows.map((row) => ({
-    ...row,
-    orders: Math.round(row.orders * factor),
-    sales: Math.round(row.sales * factor * 100) / 100,
-    tips: Math.round(row.tips * factor * 100) / 100,
-    voids: Math.round(row.voids * (range === 'Last 7 Days' ? 3 : 1)),
-  }))
+  const salesRows = useMemo(
+    () =>
+      dailySalesSeed.map((row) => {
+        const orders = Math.round(row.orders * factor)
+        const sales = scale(row.sales, factor)
+        const tips = scale(row.tips, factor)
+        const voids = Math.round(row.voids * (range === 'Last 7 Days' ? 3 : 1))
+        return {
+          ...row,
+          orders,
+          sales,
+          tips,
+          voids,
+          avgCheck: orders === 0 ? 0 : Math.round((sales / orders) * 100) / 100,
+        }
+      }),
+    [factor, range],
+  )
 
-  const visibleRows =
-    activeTab === 'Voids & Refunds'
-      ? scaledRows.filter((r) => r.voids > 0)
-      : activeTab === 'Tips'
-        ? [...scaledRows].sort((a, b) => b.tips - a.tips)
-        : scaledRows
+  const visibleSales = salesRows
+    .filter((row) => {
+      if (activeTab === 'Voids & Refunds' && row.voids === 0) return false
+      return matchesQuery(row.name, query)
+    })
+    .slice()
+    .sort((a, b) => {
+      if (activeTab === 'Tips' || activeTab === 'Server Performance') return b.tips - a.tips
+      return 0
+    })
 
-  const gross = visibleRows.reduce((s, r) => s + r.sales, 0)
-  const tips = visibleRows.reduce((s, r) => s + r.tips, 0)
-  const voids = visibleRows.reduce((s, r) => s + r.voids * 18.5, 0)
-  const tax = gross * 0.0825
-  const net = gross - tax
+  const gross = visibleSales.reduce((sum, row) => sum + row.sales, 0)
+  const tipsTotal = visibleSales.reduce((sum, row) => sum + row.tips, 0)
+  const voidCount = visibleSales.reduce((sum, row) => sum + row.voids, 0)
+  const allVoidCount = salesRows.reduce((sum, row) => sum + row.voids, 0)
+  const voidAmount = allVoidCount === 0 ? 0 : scale(92.5, factor) * (voidCount / allVoidCount)
+  const tax = Math.round(gross * 0.0825 * 100) / 100
+  const net = Math.round((gross - tax) * 100) / 100
+  const orders = visibleSales.reduce((sum, row) => sum + row.orders, 0)
 
-  const tabKpis =
-    activeTab === 'Tax Summary'
-      ? [
-          { label: 'Taxable Sales', value: `$${gross.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
-          { label: 'Tax Collected', value: `$${tax.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
-          { label: 'Exempt Sales', value: '$412.00' },
-          { label: 'Rate', value: '8.25%' },
-          { label: 'Locations', value: '5' },
-        ]
-      : activeTab === 'Tips'
-        ? [
-            { label: 'Tips', value: `$${tips.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
-            { label: 'Tip % of Sales', value: `${((tips / Math.max(gross, 1)) * 100).toFixed(1)}%` },
-            { label: 'Servers', value: String(visibleRows.length) },
-            { label: 'Avg Tip / Server', value: `$${(tips / Math.max(visibleRows.length, 1)).toFixed(2)}` },
-            { label: 'Cash Tips', value: `$${(tips * 0.22).toFixed(2)}` },
-          ]
-        : activeTab === 'Voids & Refunds'
-          ? [
-              { label: 'Void Count', value: String(visibleRows.reduce((s, r) => s + r.voids, 0)) },
-              { label: 'Void Amount', value: `$${voids.toFixed(2)}` },
-              { label: 'Refunds', value: '$96.40' },
-              { label: 'Comps', value: '$42.00' },
-              { label: 'Void Rate', value: '1.2%' },
-            ]
-          : [
-              { label: 'Gross Sales', value: `$${gross.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
-              { label: 'Net Sales', value: `$${net.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
-              { label: 'Tax Collected', value: `$${tax.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
-              { label: 'Tips', value: `$${tips.toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
-              { label: 'Voids', value: `$${voids.toFixed(2)}` },
-            ]
+  const taxRows = taxSeed
+    .map((row) => ({
+      ...row,
+      taxable: scale(row.taxable, factor),
+      exempt: scale(row.exempt, factor),
+      tax: scale(row.tax, factor),
+    }))
+    .filter((row) => matchesQuery(row.location, query))
+
+  const xRows = xReportSeed
+    .map((row) => ({
+      ...row,
+      tenders: Math.round(row.tenders * factor),
+      cash: scale(row.cash, factor),
+      card: scale(row.card, factor),
+      tips: scale(row.tips, factor),
+    }))
+    .filter((row) => matchesQuery(row.terminal, query))
+
+  const zRows = zReportSeed
+    .map((row) => ({
+      ...row,
+      net: scale(row.net, factor),
+      tax: scale(row.tax, factor),
+      tips: scale(row.tips, factor),
+    }))
+    .filter((row) => matchesQuery(row.bucket, query))
+
+  const terminalRows = terminalSeed
+    .map((row) => ({
+      ...row,
+      auth: scale(row.auth, factor),
+      captured: scale(row.captured, factor),
+      tips: scale(row.tips, factor),
+      variance: scale(row.variance, factor),
+    }))
+    .filter((row) => matchesQuery(`${row.batch} ${row.terminal}`, query))
 
   const transactions = recentTransactions.filter((t) => {
+    if (!matchesQuery(`${t.id} ${t.server} ${t.type} ${t.tender}`, query)) return false
     if (activeTab === 'Voids & Refunds') return t.tender === 'Split' || t.type === 'Delivery'
     if (activeTab === 'Tips') return t.type === 'Dine-In' || t.type === 'Bar Tab'
     return true
   })
 
+  const kpis = (() => {
+    if (activeTab === 'Tax Summary') {
+      const collected = taxRows.reduce((s, r) => s + r.tax, 0)
+      const taxable = taxRows.reduce((s, r) => s + r.taxable, 0)
+      return [
+        { label: 'Taxable Sales', value: money(taxable) },
+        { label: 'Tax Collected', value: money(collected) },
+        { label: 'Exempt Sales', value: money(taxRows.reduce((s, r) => s + r.exempt, 0)) },
+        { label: 'Rate', value: '8.25%' },
+        { label: 'Locations', value: String(taxRows.length) },
+      ]
+    }
+    if (activeTab === 'Tips') {
+      return [
+        { label: 'Tips', value: money(tipsTotal) },
+        { label: 'Tip % of Sales', value: `${((tipsTotal / Math.max(gross, 1)) * 100).toFixed(1)}%` },
+        { label: 'Servers', value: String(visibleSales.length) },
+        { label: 'Avg Tip / Server', value: money(tipsTotal / Math.max(visibleSales.length, 1)) },
+        { label: 'Cash Tips', value: money(tipsTotal * 0.22) },
+      ]
+    }
+    if (activeTab === 'Voids & Refunds') {
+      return [
+        { label: 'Void Count', value: String(voidCount) },
+        { label: 'Void Amount', value: money(voidAmount) },
+        { label: 'Refunds', value: money(scale(96.4, factor)) },
+        { label: 'Comps', value: money(scale(42, factor)) },
+        { label: 'Void Rate', value: `${((voidCount / Math.max(orders, 1)) * 100).toFixed(1)}%` },
+      ]
+    }
+    if (activeTab === 'X Report') {
+      return [
+        { label: 'Open Tenders', value: String(xRows.reduce((s, r) => s + r.tenders, 0)) },
+        { label: 'Cash in Drawer', value: money(xRows.reduce((s, r) => s + r.cash, 0)) },
+        { label: 'Card Captured', value: money(xRows.reduce((s, r) => s + r.card, 0)) },
+        { label: 'Tips', value: money(xRows.reduce((s, r) => s + r.tips, 0)) },
+        { label: 'Variance', value: money(0) },
+      ]
+    }
+    if (activeTab === 'Z Report') {
+      return [
+        { label: 'Net Sales', value: money(zRows.reduce((s, r) => s + r.net, 0)) },
+        { label: 'Tax', value: money(zRows.reduce((s, r) => s + r.tax, 0)) },
+        { label: 'Tips', value: money(zRows.reduce((s, r) => s + r.tips, 0)) },
+        { label: 'Day Close', value: 'Ready' },
+        { label: 'Printed', value: 'No' },
+      ]
+    }
+    if (activeTab === 'Terminal Reconciliation') {
+      const variance = terminalRows.reduce((s, r) => s + r.variance, 0)
+      return [
+        { label: 'Batches', value: String(terminalRows.length) },
+        { label: 'Auth', value: money(terminalRows.reduce((s, r) => s + r.auth, 0)) },
+        { label: 'Captured', value: money(terminalRows.reduce((s, r) => s + r.captured, 0)) },
+        { label: 'Tips', value: money(terminalRows.reduce((s, r) => s + r.tips, 0)) },
+        { label: 'Variance', value: money(variance) },
+      ]
+    }
+    return [
+      { label: 'Gross Sales', value: money(gross) },
+      { label: 'Net Sales', value: money(net) },
+      { label: 'Tax Collected', value: money(tax) },
+      { label: 'Tips', value: money(tipsTotal) },
+      { label: 'Voids', value: money(voidAmount) },
+    ]
+  })()
+
+  const exportSections = (() => {
+    const summary = {
+      heading: 'Summary',
+      headers: ['Metric', 'Value'],
+      rows: kpis.map((kpi) => [kpi.label, kpi.value]),
+    }
+    if (activeTab === 'Tax Summary') {
+      return [
+        summary,
+        {
+          heading: 'Tax by location',
+          headers: ['Location', 'Taxable', 'Exempt', 'Tax', 'Rate'],
+          rows: taxRows.map((row) => [row.location, money(row.taxable), money(row.exempt), money(row.tax), row.rate]),
+        },
+      ]
+    }
+    if (activeTab === 'X Report') {
+      return [
+        summary,
+        {
+          heading: 'Mid-shift snapshot',
+          headers: ['Terminal', 'Tenders', 'Cash', 'Card', 'Tips', 'Variance'],
+          rows: xRows.map((row) => [row.terminal, row.tenders, money(row.cash), money(row.card), money(row.tips), money(row.variance)]),
+        },
+      ]
+    }
+    if (activeTab === 'Z Report') {
+      return [
+        summary,
+        {
+          heading: 'End-of-day close',
+          headers: ['Bucket', 'Net', 'Tax', 'Tips'],
+          rows: zRows.map((row) => [row.bucket, money(row.net), money(row.tax), money(row.tips)]),
+        },
+      ]
+    }
+    if (activeTab === 'Terminal Reconciliation') {
+      return [
+        summary,
+        {
+          heading: 'Batches',
+          headers: ['Batch', 'Terminal', 'Auth', 'Captured', 'Tips', 'Variance'],
+          rows: terminalRows.map((row) => [row.batch, row.terminal, money(row.auth), money(row.captured), money(row.tips), money(row.variance)]),
+        },
+      ]
+    }
+    return [
+      summary,
+      {
+        heading: activeTab,
+        headers: ['Server', 'Orders', 'Sales', 'Tips', 'Avg Check', 'Voids'],
+        rows: visibleSales.map((row) => [row.name, row.orders, money(row.sales), money(row.tips), money(row.avgCheck), row.voids]),
+      },
+      {
+        heading: 'Recent transactions',
+        headers: ['Order', 'Time', 'Server', 'Type', 'Tender', 'Total'],
+        rows: transactions.map((t) => [t.id, t.time, t.server, t.type, t.tender, money(t.total)]),
+      },
+    ]
+  })()
+
+  function handleCsv() {
+    downloadCsvSections(`airests-${activeTab.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${fileStamp()}`, exportSections)
+  }
+
+  function handlePdf() {
+    printReport(`${activeTab} — ${period}`, exportSections, 'Riverside Hospitality Group · Downtown')
+  }
+
   return (
     <>
       <AdminTopbar title="Reports" />
       <main className="flex-1 overflow-y-auto p-4 md:p-6">
-        <div className="w-full space-y-6">
-          {/* Tabs */}
-          <div className="flex gap-1 overflow-x-auto rounded-lg bg-muted p-1">
-            {reportTabs.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={cn(
-                  'shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-                  activeTab === tab ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-
-          {/* Date range + export */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap gap-1.5">
-              {dateRanges.map((option) => (
-                <button
-                  key={option}
-                  onClick={() => setRange(option)}
-                  className={cn(
-                    'flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors',
-                    range === option ? 'border-primary bg-accent text-accent-foreground' : 'border-border bg-card text-foreground hover:bg-secondary',
-                  )}
-                >
-                  <Calendar className="size-4 text-muted-foreground" />
-                  {option === 'Today' ? rangeLabel[option] : option}
-                </button>
-              ))}
+        <div className="w-full space-y-5">
+          <LayoutGroup id="report-tabs">
+            <div className="flex gap-1 overflow-x-auto border-b border-border">
+              {reportTabs.map((tab) => {
+                const active = tab === activeTab
+                return (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => {
+                      setActiveTab(tab)
+                      setQuery('')
+                    }}
+                    className={cn(
+                      'relative shrink-0 px-3 py-2.5 text-sm font-medium transition-colors',
+                      active ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    {tab}
+                    {active && (
+                      <m.span
+                        layoutId="report-tab-underline"
+                        className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary"
+                        transition={{ type: 'spring', stiffness: 420, damping: 36 }}
+                      />
+                    )}
+                  </button>
+                )
+              })}
             </div>
-            <div className="flex gap-2">
-              <button className="flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary">
+          </LayoutGroup>
+
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              {(['Today', 'Yesterday', 'Last 7 Days'] as const).map((option) => {
+                const active = range === option
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setRange(option)}
+                    className={cn(
+                      'inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors',
+                      active
+                        ? 'border-primary bg-primary text-primary-foreground shadow-[0_6px_16px_rgba(255,122,53,0.28)]'
+                        : 'border-border bg-card text-foreground hover:bg-secondary',
+                    )}
+                  >
+                    <Calendar className={cn('size-4', active ? 'text-primary-foreground' : 'text-muted-foreground')} />
+                    {active ? rangeFullLabel[option] : option}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Filter this report…"
+                  className="w-full rounded-full border border-border bg-card py-2 pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring sm:w-56"
+                />
+              </div>
+              <Pressable
+                onClick={handleCsv}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground hover:bg-secondary"
+              >
                 <Download className="size-4" />
                 Export CSV
-              </button>
-              <button className="flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary">
+              </Pressable>
+              <Pressable
+                onClick={handlePdf}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground hover:bg-secondary"
+              >
                 <Download className="size-4" />
                 Export PDF
-              </button>
+              </Pressable>
             </div>
           </div>
 
-          {/* KPI row */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-            {tabKpis.map((k) => (
-              <div key={k.label} className="rounded-xl border border-border bg-card p-4">
-                <p className="text-xs text-muted-foreground">{k.label}</p>
-                <p className="mt-1 font-mono text-xl font-semibold tabular-nums text-foreground">{k.value}</p>
-              </div>
-            ))}
-          </div>
+          <AnimatePresence mode="wait">
+            <m.div
+              key={`${activeTab}-${range}`}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              className="space-y-5"
+            >
+              <Stagger className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5" delay={0.04}>
+                {kpis.map((kpi) => (
+                  <StaggerItem key={kpi.label}>
+                    <div className="rounded-xl border border-border bg-card p-4 shadow-surface">
+                      <p className="text-xs font-medium text-muted-foreground">{kpi.label}</p>
+                      <p className="mt-2 font-mono text-[1.35rem] font-semibold tabular-nums tracking-tight text-foreground md:text-2xl">
+                        {kpi.value}
+                      </p>
+                    </div>
+                  </StaggerItem>
+                ))}
+              </Stagger>
 
-          {/* Data table */}
-          <section className="rounded-xl border border-border bg-card">
-            <div className="border-b border-border p-4">
-              <h2 className="text-sm font-semibold text-foreground">{activeTab} — {rangeLabel[range]}</h2>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                    <th className="px-4 py-2.5 font-medium">Server</th>
-                    <th className="px-4 py-2.5 text-right font-medium">Orders</th>
-                    <th className="px-4 py-2.5 text-right font-medium">Sales</th>
-                    <th className="px-4 py-2.5 text-right font-medium">Tips</th>
-                    <th className="px-4 py-2.5 text-right font-medium">Avg. Check</th>
-                    <th className="px-4 py-2.5 text-right font-medium">Voids</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visibleRows.map((row, i) => (
-                    <tr key={row.name} className={cn('border-b border-border/60 last:border-0', i % 2 === 1 && 'bg-muted/30 dark:bg-transparent')}>
-                      <td className="px-4 py-2.5 font-medium text-foreground">{row.name}</td>
-                      <td className="px-4 py-2.5 text-right font-mono tabular-nums text-foreground">{row.orders}</td>
-                      <td className="px-4 py-2.5 text-right font-mono tabular-nums text-foreground">${row.sales.toFixed(2)}</td>
-                      <td className="px-4 py-2.5 text-right font-mono tabular-nums text-foreground">${row.tips.toFixed(2)}</td>
-                      <td className="px-4 py-2.5 text-right font-mono tabular-nums text-foreground">${row.avgCheck.toFixed(2)}</td>
-                      <td className={cn('px-4 py-2.5 text-right font-mono tabular-nums', row.voids > 0 ? 'text-danger' : 'text-muted-foreground')}>
-                        {row.voids}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t border-border font-medium text-foreground">
-                    <td className="px-4 py-2.5">Total</td>
-                    <td className="px-4 py-2.5 text-right font-mono tabular-nums">{visibleRows.reduce((s, r) => s + r.orders, 0)}</td>
-                    <td className="px-4 py-2.5 text-right font-mono tabular-nums">
-                      ${visibleRows.reduce((s, r) => s + r.sales, 0).toFixed(2)}
-                    </td>
-                    <td className="px-4 py-2.5 text-right font-mono tabular-nums">
-                      ${visibleRows.reduce((s, r) => s + r.tips, 0).toFixed(2)}
-                    </td>
-                    <td className="px-4 py-2.5 text-right">—</td>
-                    <td className="px-4 py-2.5 text-right font-mono tabular-nums">{visibleRows.reduce((s, r) => s + r.voids, 0)}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </section>
-
-          {/* Recent transactions */}
-          <section className="rounded-xl border border-border bg-card">
-            <div className="border-b border-border p-4">
-              <h2 className="text-sm font-semibold text-foreground">Recent Transactions</h2>
-              <p className="text-xs text-muted-foreground">Live feed of the most recent closed checks across the register</p>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                    <th className="px-4 py-2.5 font-medium">Order</th>
-                    <th className="hidden px-4 py-2.5 font-medium sm:table-cell">Time</th>
-                    <th className="px-4 py-2.5 font-medium">Server</th>
-                    <th className="hidden px-4 py-2.5 font-medium md:table-cell">Type</th>
-                    <th className="px-4 py-2.5 font-medium">Tender</th>
-                    <th className="px-4 py-2.5 text-right font-medium">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {transactions.map((t) => (
-                    <tr key={t.id} className="border-b border-border/60 last:border-0">
-                      <td className="px-4 py-2.5 font-medium text-foreground">{t.id}</td>
-                      <td className="hidden px-4 py-2.5 text-muted-foreground sm:table-cell">{t.time}</td>
-                      <td className="px-4 py-2.5 text-muted-foreground">{t.server}</td>
-                      <td className="hidden px-4 py-2.5 text-muted-foreground md:table-cell">{t.type}</td>
-                      <td className="px-4 py-2.5 text-muted-foreground">{t.tender}</td>
-                      <td className="px-4 py-2.5 text-right font-mono tabular-nums text-foreground">${t.total.toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
+              {activeTab === 'Tax Summary' ? (
+                <ReportTable
+                  title={`Tax Summary — ${period}`}
+                  headers={['Location', 'Taxable', 'Exempt', 'Tax', 'Rate']}
+                  rows={taxRows.map((row) => [row.location, money(row.taxable), money(row.exempt), money(row.tax), row.rate])}
+                  empty="No locations match this filter."
+                  totals={['Total', money(taxRows.reduce((s, r) => s + r.taxable, 0)), money(taxRows.reduce((s, r) => s + r.exempt, 0)), money(taxRows.reduce((s, r) => s + r.tax, 0)), '']}
+                />
+              ) : activeTab === 'X Report' ? (
+                <ReportTable
+                  title={`X Report — ${period}`}
+                  headers={['Terminal', 'Tenders', 'Cash', 'Card', 'Tips', 'Variance']}
+                  rows={xRows.map((row) => [row.terminal, row.tenders, money(row.cash), money(row.card), money(row.tips), money(row.variance)])}
+                  empty="No terminals match this filter."
+                  totals={[
+                    'Total',
+                    xRows.reduce((s, r) => s + r.tenders, 0),
+                    money(xRows.reduce((s, r) => s + r.cash, 0)),
+                    money(xRows.reduce((s, r) => s + r.card, 0)),
+                    money(xRows.reduce((s, r) => s + r.tips, 0)),
+                    money(0),
+                  ]}
+                />
+              ) : activeTab === 'Z Report' ? (
+                <ReportTable
+                  title={`Z Report — ${period}`}
+                  headers={['Sales bucket', 'Net', 'Tax', 'Tips']}
+                  rows={zRows.map((row) => [row.bucket, money(row.net), money(row.tax), money(row.tips)])}
+                  empty="No Z-close lines match this filter."
+                  totals={[
+                    'Day total',
+                    money(zRows.reduce((s, r) => s + r.net, 0)),
+                    money(zRows.reduce((s, r) => s + r.tax, 0)),
+                    money(zRows.reduce((s, r) => s + r.tips, 0)),
+                  ]}
+                />
+              ) : activeTab === 'Terminal Reconciliation' ? (
+                <ReportTable
+                  title={`Terminal Reconciliation — ${period}`}
+                  headers={['Batch', 'Terminal', 'Auth', 'Captured', 'Tips', 'Variance']}
+                  rows={terminalRows.map((row) => [
+                    row.batch,
+                    row.terminal,
+                    money(row.auth),
+                    money(row.captured),
+                    money(row.tips),
+                    row.variance === 0 ? money(0) : money(row.variance),
+                  ])}
+                  empty="No batches match this filter."
+                  emphasisLast
+                />
+              ) : (
+                <>
+                  <ReportTable
+                    title={`${activeTab} — ${period}`}
+                    headers={['Server', 'Orders', 'Sales', 'Tips', 'Avg. Check', 'Voids']}
+                    rows={visibleSales.map((row) => [
+                      row.name,
+                      row.orders,
+                      money(row.sales),
+                      money(row.tips),
+                      money(row.avgCheck),
+                      row.voids,
+                    ])}
+                    empty="No servers match this filter."
+                    totals={[
+                      'Total',
+                      orders,
+                      money(gross),
+                      money(tipsTotal),
+                      '—',
+                      voidCount,
+                    ]}
+                    dangerLast
+                  />
+                  <ReportTable
+                    title="Recent Transactions"
+                    subtitle="Live feed of the most recent closed checks"
+                    headers={['Order', 'Time', 'Server', 'Type', 'Tender', 'Total']}
+                    rows={transactions.map((t) => [t.id, t.time, t.server, t.type, t.tender, money(t.total)])}
+                    empty="No transactions match this filter."
+                  />
+                </>
+              )}
+            </m.div>
+          </AnimatePresence>
         </div>
       </main>
     </>
+  )
+}
+
+function ReportTable({
+  title,
+  subtitle,
+  headers,
+  rows,
+  totals,
+  empty,
+  dangerLast,
+  emphasisLast,
+}: {
+  title: string
+  subtitle?: string
+  headers: string[]
+  rows: (string | number)[][]
+  totals?: (string | number)[]
+  empty: string
+  dangerLast?: boolean
+  emphasisLast?: boolean
+}) {
+  return (
+    <section className="overflow-hidden rounded-xl border border-border bg-card shadow-surface">
+      <div className="border-b border-border px-4 py-3.5">
+        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+        {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border text-left text-xs text-muted-foreground">
+              {headers.map((header, index) => (
+                <th
+                  key={header}
+                  className={cn('px-4 py-2.5 font-medium', index === 0 ? 'text-left' : 'text-right')}
+                >
+                  {header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, rowIndex) => (
+              <tr key={`${row[0]}-${rowIndex}`} className="border-b border-border/60 last:border-0 hover:bg-secondary/50">
+                {row.map((cell, index) => {
+                  const last = index === row.length - 1
+                  const isVoid = dangerLast && last && Number(cell) > 0
+                  const isVariance = emphasisLast && last && String(cell).includes('-')
+                  return (
+                    <td
+                      key={`${headers[index]}-${index}`}
+                      className={cn(
+                        'px-4 py-2.5',
+                        index === 0 ? 'font-medium text-foreground' : 'text-right font-mono tabular-nums text-foreground',
+                        isVoid && 'text-danger',
+                        dangerLast && last && Number(cell) === 0 && 'text-muted-foreground',
+                        isVariance && 'text-danger',
+                      )}
+                    >
+                      {cell}
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan={headers.length} className="px-4 py-12 text-center text-sm text-muted-foreground">
+                  {empty}
+                </td>
+              </tr>
+            )}
+          </tbody>
+          {totals && rows.length > 0 && (
+            <tfoot>
+              <tr className="border-t border-border bg-muted/40 font-medium text-foreground">
+                {totals.map((cell, index) => (
+                  <td
+                    key={`total-${index}`}
+                    className={cn('px-4 py-2.5', index === 0 ? 'text-left' : 'text-right font-mono tabular-nums')}
+                  >
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            </tfoot>
+          )}
+        </table>
+      </div>
+    </section>
   )
 }

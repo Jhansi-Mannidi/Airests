@@ -47,7 +47,7 @@ export function AirestsMark({
         </svg>
       </div>
       {showWordmark && (
-        <span className={cn('font-sans font-bold tracking-tight text-foreground', s.text)}>Airests</span>
+        <span className={cn('font-sans font-bold tracking-tight text-current', s.text)}>Airests</span>
       )}
     </div>
   )

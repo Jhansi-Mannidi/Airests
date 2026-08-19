@@ -2,124 +2,390 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { UtensilsCrossed, ShoppingBag, Store, Bike, Timer } from 'lucide-react'
+import {
+  UtensilsCrossed,
+  ShoppingBag,
+  Store,
+  Bike,
+  Timer,
+  Banknote,
+  ArrowLeftRight,
+  Clock3,
+  Printer,
+  ChevronRight,
+  Users,
+  AlertTriangle,
+  MapPin,
+  Search,
+} from 'lucide-react'
 import { PosTopBar, OfflineBanner } from '@/components/pos/pos-topbar'
-import { openChecks } from '@/lib/mock-data'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import { brand, openChecks } from '@/lib/mock-data'
+import { useLiveTables } from '@/lib/table-status'
 import { cn } from '@/lib/utils'
+import { Stagger, StaggerItem } from '@/components/motion/primitives'
 
 const orderTypes = [
-  { label: 'Dine-In', icon: UtensilsCrossed, href: '/pos/floor-plan', desc: 'Seat guests at a table' },
-  { label: 'Takeout', icon: ShoppingBag, href: '/pos/order?type=takeout', desc: 'Order to go' },
-  { label: 'Pickup', icon: Store, href: '/pos/order?type=pickup', desc: 'Call-ahead pickup' },
-  { label: 'Delivery', icon: Bike, href: '/pos/order?type=delivery', desc: 'Third-party or in-house' },
+  { label: 'Takeout', icon: ShoppingBag, href: '/pos/order?type=takeout', desc: 'Guest is already at the counter' },
+  { label: 'Pickup', icon: Store, href: '/pos/order?type=pickup', desc: 'Named bag, call-ahead ticket' },
+  { label: 'Delivery', icon: Bike, href: '/pos/order?type=delivery', desc: 'In-house driver or third-party' },
 ]
 
+const shiftOps = [
+  { href: '/pos/cash-drawer', label: 'Cash Drawer', hint: 'Paid-in / paid-out', icon: Banknote },
+  { href: '/pos/transfer', label: 'Transfers', hint: 'Move or merge checks', icon: ArrowLeftRight },
+  { href: '/pos/clock', label: 'Time Clock', hint: 'Punch in or out', icon: Clock3 },
+  { href: '/pos/print', label: 'Print / KOT', hint: 'Receipts and tickets', icon: Printer },
+]
+
+function elapsedMinutes(elapsed: string) {
+  const value = Number.parseInt(elapsed, 10)
+  return Number.isFinite(value) ? value : 0
+}
+
+function greeting() {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+
+function periodLabel() {
+  const hour = new Date().getHours()
+  if (hour < 11) return 'Breakfast'
+  if (hour < 15) return 'Lunch'
+  if (hour < 17) return 'Afternoon'
+  return 'Dinner'
+}
+
+function initials(name: string) {
+  return name
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+}
+
 export default function PosHomePage() {
+  const liveTables = useLiveTables()
   const [showOffline, setShowOffline] = React.useState(false)
   const [checkFilter, setCheckFilter] = React.useState('All')
+  const [checkQuery, setCheckQuery] = React.useState('')
+  const [hello, setHello] = React.useState('Hello')
+  const [period, setPeriod] = React.useState('Service')
+
+  React.useEffect(() => {
+    setHello(greeting())
+    setPeriod(periodLabel())
+  }, [])
 
   const checkTypes = ['All', ...Array.from(new Set(openChecks.map((c) => c.type)))]
-  const visibleChecks = openChecks.filter((c) => checkFilter === 'All' || c.type === checkFilter)
+  const visibleChecks = openChecks
+    .filter((c) => checkFilter === 'All' || c.type === checkFilter)
+    .filter((c) => {
+      const q = checkQuery.trim().toLowerCase()
+      if (!q) return true
+      return `${c.label} ${c.server} ${c.type} ${c.id}`.toLowerCase().includes(q)
+    })
+    .slice()
+    .sort((a, b) => elapsedMinutes(b.elapsed) - elapsedMinutes(a.elapsed))
+
+  const openTableCount = liveTables.filter((t) => t.status === 'open').length
+  const agingCount = openChecks.filter((c) => elapsedMinutes(c.elapsed) >= 30).length
+  const openTotal = openChecks.reduce((sum, c) => sum + c.total, 0)
+  const downtown = brand.locations[0]
+  const takeoutOpen = openChecks.filter((c) => c.type === 'Takeout').length
+  const pickupOpen = openChecks.filter((c) => c.type === 'Pickup').length
+
+  const orderMeta: Record<string, string> = {
+    Takeout: takeoutOpen === 1 ? '1 check open' : `${takeoutOpen} checks open`,
+    Pickup: pickupOpen === 1 ? '1 waiting' : `${pickupOpen} waiting`,
+    Delivery: 'No live runs',
+  }
 
   return (
-    <div className="flex h-dvh flex-col bg-background font-sans">
+    <div className="pos-canvas flex h-dvh flex-col font-sans">
       <PosTopBar
         connectivity={showOffline ? 'offline' : 'online'}
         pendingSync={showOffline ? 3 : undefined}
         right={
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
+            className="hidden h-8 text-xs text-muted-foreground md:inline-flex"
             onClick={() => setShowOffline((v) => !v)}
-            className="hidden rounded-md border border-border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-secondary md:inline-block"
           >
-            {showOffline ? 'Simulate: Online' : 'Simulate: Offline'}
-          </button>
+            {showOffline ? 'Back online' : 'Simulate offline'}
+          </Button>
         }
       />
       {showOffline && <OfflineBanner />}
 
-      <main className="flex flex-1 flex-col gap-6 overflow-y-auto p-4 md:flex-row md:gap-8 md:p-8">
-        <section className="flex-1">
-          <div className="mb-6">
-            <h1 className="font-sans text-2xl font-semibold tracking-tight text-foreground md:text-3xl">Start an Order</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Register 2 · Riverside Grill — Downtown, Austin TX</p>
+      <main className="flex min-h-0 flex-1 flex-col gap-5 overflow-hidden p-4 md:flex-row md:p-6 lg:gap-6">
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-5 overflow-y-auto pb-2">
+          <header className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-border/80 bg-card/80 px-2.5 py-1 text-[11px] font-medium text-muted-foreground shadow-sm">
+                <span className="size-1.5 rounded-full bg-success" />
+                {period} service
+                <span className="text-border">|</span>
+                <MapPin className="size-3" />
+                Downtown
+              </div>
+              <h1 className="font-sans text-[1.85rem] font-semibold tracking-[-0.03em] text-foreground md:text-[2rem]">
+                {hello}, Maria
+              </h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {brand.registerName}
+                <span className="mx-1.5 text-border">·</span>
+                Riverside Grill — Downtown
+              </p>
+            </div>
+          </header>
+
+          <div className="overflow-hidden rounded-2xl bg-card/95 shadow-surface ring-1 ring-border/70">
+            <div className="grid grid-cols-2 divide-border sm:grid-cols-4 sm:divide-x">
+              <Kpi label="Location sales" value={`$${downtown.salesToday.toLocaleString(undefined, { minimumFractionDigits: 0 })}`} hint={`${downtown.orders} orders today`} />
+              <Kpi label="Open checks" value={String(openChecks.length)} hint={`$${openTotal.toFixed(0)} on the floor`} />
+              <Kpi label="Tables open" value={String(openTableCount)} hint={`${liveTables.length} on the floor plan`} />
+              <Kpi label="Aging" value={String(agingCount)} hint="Open longer than 30 min" tone={agingCount > 0 ? 'warning' : 'default'} />
+            </div>
           </div>
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Order Type</h2>
-          <div className="grid grid-cols-2 gap-4">
-            {orderTypes.map(({ label, icon: Icon, href, desc }) => (
+
+          <div>
+            <div className="mb-3 flex items-end justify-between">
+              <div>
+                <h2 className="text-sm font-semibold tracking-tight text-foreground">Start an order</h2>
+                <p className="text-xs text-muted-foreground">Choose how the guest is served</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.2fr_1fr] lg:gap-4">
               <Link
-                key={label}
-                href={href}
-                className="group flex flex-col items-start gap-2 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-primary/50 hover:shadow-elevated sm:gap-3 sm:p-6"
+                href="/pos/floor-plan"
+                className="pos-ink group relative flex min-h-[16rem] flex-col justify-between overflow-hidden rounded-2xl p-6 shadow-surface transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:min-h-[22rem] lg:p-7"
               >
-                <span className="flex size-12 items-center justify-center rounded-xl bg-accent text-accent-foreground">
-                  <Icon className="size-6" />
-                </span>
-                <div>
-                  <p className="text-lg font-semibold text-foreground">{label}</p>
-                  <p className="text-sm text-muted-foreground">{desc}</p>
+                <div className="pointer-events-none absolute -right-8 -top-10 size-44 rounded-full bg-primary/25 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-16 left-10 size-52 rounded-full bg-primary/10 blur-3xl" />
+                <div className="relative flex items-start justify-between">
+                  <span className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                    <UtensilsCrossed className="size-5" />
+                  </span>
+                  <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium tracking-wide text-white/80">
+                    Most used
+                  </span>
+                </div>
+                <div className="relative">
+                  <p className="text-3xl font-semibold tracking-[-0.04em]">Dine-In</p>
+                  <p className="mt-2 max-w-sm text-sm leading-relaxed text-white/70">
+                    Seat the party on Main Dining, Patio, or Bar, then build the check at the table.
+                  </p>
+                  <div className="mt-5 flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium text-white/80">{openTableCount} tables ready to seat</p>
+                    <span className="inline-flex items-center gap-1 text-sm font-semibold text-primary">
+                      Open floor
+                      <ChevronRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                    </span>
+                  </div>
                 </div>
               </Link>
-            ))}
+
+              <Stagger className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-1" delay={0.06}>
+                {orderTypes.map(({ label, icon: Icon, href, desc }) => (
+                  <StaggerItem key={label} hover>
+                    <Link
+                      href={href}
+                      className="group flex items-center gap-4 rounded-2xl bg-card/95 p-4 shadow-sm ring-1 ring-border/70 transition-all hover:-translate-y-0.5 hover:shadow-surface hover:ring-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+                      <Icon className="size-5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center justify-between gap-2">
+                        <span className="text-[15px] font-semibold tracking-tight text-foreground">{label}</span>
+                        <ChevronRight className="size-4 text-muted-foreground/70 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                      </span>
+                      <span className="mt-0.5 block truncate text-xs text-muted-foreground">{desc}</span>
+                      <span className="mt-1.5 inline-flex rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                        {orderMeta[label]}
+                      </span>
+                    </span>
+                    </Link>
+                  </StaggerItem>
+                ))}
+              </Stagger>
+            </div>
+          </div>
+
+          <div>
+            <h2 className="mb-3 text-sm font-semibold tracking-tight text-foreground">Shift operations</h2>
+            <div className="grid grid-cols-2 overflow-hidden rounded-2xl bg-card/95 shadow-sm ring-1 ring-border/70 sm:grid-cols-4">
+              {shiftOps.map(({ href, label, hint, icon: Icon }, index) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className={cn(
+                    'flex items-center gap-3 px-4 py-4 transition-colors hover:bg-secondary/80',
+                    index > 0 && 'border-t border-border/80 sm:border-l sm:border-t-0',
+                  )}
+                >
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/80 bg-background text-foreground">
+                    <Icon className="size-4" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-foreground">{label}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{hint}</span>
+                  </span>
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
 
-        <section className="w-full shrink-0 md:w-[360px]">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Open Checks</h2>
-            <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
-              {visibleChecks.length} active
-            </span>
+        <aside className="flex min-h-[22rem] w-full shrink-0 flex-col overflow-hidden rounded-2xl bg-card/95 shadow-surface ring-1 ring-border/70 md:min-h-0 md:w-[400px]">
+          <div className="border-b border-border/80 px-5 py-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold tracking-tight text-foreground">Open checks</h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">Oldest first · tap to resume</p>
+              </div>
+              <div className="text-right">
+                <p className="font-mono text-base font-semibold tabular-nums tracking-tight text-foreground">
+                  ${openTotal.toFixed(2)}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  {visibleChecks.length} of {openChecks.length}
+                </p>
+              </div>
+            </div>
+            <div className="mt-3 flex gap-1 overflow-x-auto rounded-lg bg-secondary p-1">
+              {checkTypes.map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setCheckFilter(type)}
+                  className={cn(
+                    'shrink-0 rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors',
+                    checkFilter === type
+                      ? 'bg-card text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+            <div className="relative mt-3">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={checkQuery}
+                onChange={(e) => setCheckQuery(e.target.value)}
+                placeholder="Search table, server, or check…"
+                className="w-full rounded-md border border-border bg-background py-1.5 pl-8 pr-3 text-xs outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
           </div>
-          <div className="mb-3 flex flex-wrap gap-1.5">
-            {checkTypes.map((type) => (
-              <button
-                key={type}
-                onClick={() => setCheckFilter(type)}
-                className={cn(
-                  'rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
-                  checkFilter === type ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground',
-                )}
-              >
-                {type}
-              </button>
-            ))}
-          </div>
-          <div className="flex flex-col gap-3">
-            {visibleChecks.map((chk) => {
+
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {visibleChecks.map((chk, index) => {
+              const minutes = elapsedMinutes(chk.elapsed)
+              const aging = minutes >= 45
+              const watch = minutes >= 30 && !aging
+              const table = chk.tableId ? liveTables.find((t) => t.id === chk.tableId) : undefined
               const href = chk.tableId
                 ? `/pos/order?table=${chk.tableId}&type=${chk.orderType}`
                 : `/pos/order?type=${chk.orderType}`
+
               return (
-              <Link
-                key={chk.id}
-                href={href}
-                className="flex items-center justify-between rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary/50"
-              >
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{chk.label}</p>
-                  <p className="text-xs text-muted-foreground">{chk.server} · {chk.type}</p>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <span className="font-mono text-sm font-semibold tabular-nums text-foreground">${chk.total.toFixed(2)}</span>
-                  <span
-                    className={cn(
-                      'flex items-center gap-1 text-xs',
-                      Number.parseInt(chk.elapsed) >= 45 ? 'text-danger' : 'text-muted-foreground',
-                    )}
-                  >
-                    <Timer className="size-3" />
-                    {chk.elapsed}
-                  </span>
-                </div>
-              </Link>
+                <Link
+                  key={chk.id}
+                  href={href}
+                  className={cn(
+                    'flex gap-0 transition-colors hover:bg-secondary/60',
+                    index !== 0 && 'border-t border-border/70',
+                  )}
+                >
+                  <span className={cn('w-[3px] shrink-0', aging ? 'bg-danger' : watch ? 'bg-warning' : 'bg-success')} />
+                  <div className="flex min-w-0 flex-1 items-center justify-between gap-3 px-4 py-3.5">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Avatar size="sm" className="bg-secondary">
+                        <AvatarFallback className="bg-secondary text-[10px] font-semibold text-muted-foreground">
+                          {initials(chk.server)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold tracking-tight text-foreground">{chk.label}</p>
+                        <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <span className="truncate">{chk.server.split(' ')[0]}</span>
+                          <span className="text-border">·</span>
+                          <span>{chk.type}</span>
+                          {table && (
+                            <>
+                              <span className="text-border">·</span>
+                              <span className="inline-flex items-center gap-0.5">
+                                <Users className="size-3" />
+                                {table.seats}
+                              </span>
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-0.5">
+                      <span className="font-mono text-sm font-semibold tabular-nums text-foreground">
+                        ${chk.total.toFixed(2)}
+                      </span>
+                      <span
+                        className={cn(
+                          'inline-flex items-center gap-1 text-[11px] font-medium',
+                          aging ? 'text-danger' : watch ? 'text-warning' : 'text-muted-foreground',
+                        )}
+                      >
+                        {aging ? <AlertTriangle className="size-3" /> : <Timer className="size-3" />}
+                        {chk.elapsed}
+                        {aging ? ' close' : ''}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
               )
             })}
             {visibleChecks.length === 0 && (
-              <p className="py-8 text-center text-sm text-muted-foreground">No {checkFilter.toLowerCase()} checks open.</p>
+              <p className="py-16 text-center text-sm text-muted-foreground">
+                No {checkQuery ? 'checks match this search' : `${checkFilter.toLowerCase()} checks open`}.
+              </p>
             )}
           </div>
-        </section>
+        </aside>
       </main>
+    </div>
+  )
+}
+
+function Kpi({
+  label,
+  value,
+  hint,
+  tone = 'default',
+}: {
+  label: string
+  value: string
+  hint: string
+  tone?: 'default' | 'warning'
+}) {
+  return (
+    <div className="border-b border-border px-4 py-3.5 sm:border-b-0 sm:px-5 sm:py-4">
+      <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
+      <p
+        className={cn(
+          'mt-1.5 font-mono text-[1.35rem] font-semibold tabular-nums tracking-tight',
+          tone === 'warning' ? 'text-warning' : 'text-foreground',
+        )}
+      >
+        {value}
+      </p>
+      <p className="mt-0.5 text-[11px] text-muted-foreground">{hint}</p>
     </div>
   )
 }

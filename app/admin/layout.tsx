@@ -3,7 +3,7 @@ import { AdminSidebar } from '@/components/admin/admin-sidebar'
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex h-dvh bg-background">
+    <div className="page-canvas flex h-dvh">
       <div className="hidden md:block">
         <AdminSidebar />
       </div>

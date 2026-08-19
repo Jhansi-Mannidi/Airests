@@ -1,25 +1,55 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
+import { toast } from 'sonner'
 import { AdminTopbar } from '@/components/admin/admin-topbar'
 import { menuCategories, menuItems, getItemDiet, type DietType, type MenuItem } from '@/lib/mock-data'
 import { DietMark, dietFilters } from '@/components/shared/diet-mark'
+import { getRecipeForItem, useRecipes, type Recipe } from '@/lib/recipes'
 import { GripVertical, Upload, Search, ChevronRight, X, Check, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
 import { Switch } from '@/components/ui/switch'
+import { downloadCsv, headerIndex, parseCsv } from '@/lib/export'
 
 export default function MenuBuilderPage() {
-  const [activeCategory, setActiveCategory] = useState('Burgers')
-  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(menuItems.find((m) => m.category === 'Burgers') ?? null)
+  const searchParams = useSearchParams()
+  const itemParam = searchParams.get('item')
+  const recipes = useRecipes()
+  const [catalog, setCatalog] = useState<MenuItem[]>(() => menuItems.map((item) => ({ ...item })))
+  const [activeCategory, setActiveCategory] = useState(menuCategories[0])
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(menuItems.find((m) => m.category === menuCategories[0]) ?? null)
   const [importOpen, setImportOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [dietFilter, setDietFilter] = useState<'all' | DietType>('all')
   const [availability, setAvailability] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(menuItems.map((m) => [m.id, !m.soldOut])),
   )
+  const [draftName, setDraftName] = useState('')
+  const [draftDescription, setDraftDescription] = useState('')
+  const [draftPrice, setDraftPrice] = useState('')
+  const [draftDaypart, setDraftDaypart] = useState('All Day')
+  const photoRef = useRef<HTMLInputElement>(null)
 
-  const items = menuItems.filter((m) => {
+  useEffect(() => {
+    if (!itemParam) return
+    const item = catalog.find((m) => m.id === itemParam)
+    if (!item) return
+    setSelectedItem(item)
+    setActiveCategory(item.category)
+  }, [itemParam, catalog])
+
+  useEffect(() => {
+    if (!selectedItem) return
+    setDraftName(selectedItem.name)
+    setDraftDescription(selectedItem.description)
+    setDraftPrice(selectedItem.price.toFixed(2))
+    setDraftDaypart(selectedItem.daypart ?? 'All Day')
+  }, [selectedItem])
+
+  const items = catalog.filter((m) => {
     if (m.category !== activeCategory) return false
     if (dietFilter !== 'all' && getItemDiet(m) !== dietFilter) return false
     const q = query.trim().toLowerCase()
@@ -42,7 +72,7 @@ export default function MenuBuilderPage() {
                 key={cat}
                 onClick={() => {
                   setActiveCategory(cat)
-                  const first = menuItems.find((m) => m.category === cat)
+                  const first = catalog.find((m) => m.category === cat)
                   setSelectedItem(first ?? null)
                 }}
                 className={cn(
@@ -55,7 +85,7 @@ export default function MenuBuilderPage() {
                   {cat}
                 </span>
                 <span className={cn('text-xs', activeCategory === cat ? 'text-primary-foreground/80' : 'text-muted-foreground')}>
-                  {menuItems.filter((m) => m.category === cat).length}
+                  {catalog.filter((m) => m.category === cat).length}
                 </span>
               </button>
             ))}
@@ -115,6 +145,7 @@ export default function MenuBuilderPage() {
                   <th className="hidden px-4 py-2.5 font-medium sm:table-cell">Diet</th>
                   <th className="hidden px-4 py-2.5 font-medium sm:table-cell">Price</th>
                   <th className="hidden px-4 py-2.5 font-medium md:table-cell">Modifiers</th>
+                  <th className="hidden px-4 py-2.5 font-medium lg:table-cell">Recipe</th>
                   <th className="px-4 py-2.5 font-medium">Available</th>
                   <th className="px-2 py-2.5" />
                 </tr>
@@ -148,6 +179,14 @@ export default function MenuBuilderPage() {
                     </td>
                     <td className="hidden px-4 py-2.5 font-mono tabular-nums text-foreground sm:table-cell">${item.price.toFixed(2)}</td>
                     <td className="hidden px-4 py-2.5 text-muted-foreground md:table-cell">{item.modifierGroups?.length ?? 0} groups</td>
+                    <td className="hidden px-4 py-2.5 text-muted-foreground lg:table-cell">
+                      {(() => {
+                        const recipe = getRecipeForItem(recipes, item.id)
+                        if (!recipe) return '—'
+                        const count = recipe.ingredients.length
+                        return count === 1 ? '1 ingredient' : `${count} ingredients`
+                      })()}
+                    </td>
                     <td className="px-4 py-2.5">
                       <Switch
                         checked={availability[item.id] !== false}
@@ -162,7 +201,7 @@ export default function MenuBuilderPage() {
                 ))}
                 {items.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                    <td colSpan={7} className="px-4 py-10 text-center text-sm text-muted-foreground">
                       No items match {query ? `“${query}”` : 'this category'}.
                     </td>
                   </tr>
@@ -184,13 +223,34 @@ export default function MenuBuilderPage() {
             <div className="space-y-4 p-4">
               <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
                 <Image src={selectedItem.image || '/placeholder.svg'} alt={selectedItem.name} fill className="object-cover" />
-                <button className="absolute bottom-2 right-2 rounded-md bg-background/90 px-2.5 py-1.5 text-xs font-medium text-foreground shadow-sm hover:bg-background">
+                <input
+                  ref={photoRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    const url = URL.createObjectURL(file)
+                    setCatalog((prev) => prev.map((item) => (item.id === selectedItem.id ? { ...item, image: url } : item)))
+                    setSelectedItem((prev) => (prev ? { ...prev, image: url } : prev))
+                    toast.success('Photo updated', { description: file.name })
+                  }}
+                />
+                <button
+                  onClick={() => photoRef.current?.click()}
+                  className="absolute bottom-2 right-2 rounded-md bg-background/90 px-2.5 py-1.5 text-xs font-medium text-foreground shadow-sm hover:bg-background"
+                >
                   Change Photo
                 </button>
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-muted-foreground">Item Name</label>
-                <input defaultValue={selectedItem.name} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" />
+                <input
+                  value={draftName}
+                  onChange={(e) => setDraftName(e.target.value)}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                />
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Diet type</label>
@@ -219,7 +279,8 @@ export default function MenuBuilderPage() {
               <div>
                 <label className="mb-1 block text-xs font-medium text-muted-foreground">Description</label>
                 <textarea
-                  defaultValue={selectedItem.description}
+                  value={draftDescription}
+                  onChange={(e) => setDraftDescription(e.target.value)}
                   rows={3}
                   className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                 />
@@ -228,13 +289,18 @@ export default function MenuBuilderPage() {
                 <div>
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">Price</label>
                   <input
-                    defaultValue={selectedItem.price.toFixed(2)}
+                    value={draftPrice}
+                    onChange={(e) => setDraftPrice(e.target.value)}
                     className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">Daypart</label>
-                  <select className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring">
+                  <select
+                    value={draftDaypart}
+                    onChange={(e) => setDraftDaypart(e.target.value)}
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  >
                     <option>All Day</option>
                     <option>Lunch</option>
                     <option>Dinner</option>
@@ -253,23 +319,73 @@ export default function MenuBuilderPage() {
                   {!selectedItem.modifierGroups?.length && (
                     <p className="text-xs text-muted-foreground">No modifier groups linked.</p>
                   )}
-                  <button className="w-full rounded-md border border-dashed border-border px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-secondary">
+                  <button
+                    onClick={() => {
+                      const group = {
+                        name: 'Notes',
+                        required: false,
+                        selectType: 'single' as const,
+                        options: [{ name: 'No special notes', priceDelta: 0 }],
+                      }
+                      const next = {
+                        ...selectedItem,
+                        modifierGroups: [...(selectedItem.modifierGroups ?? []), group],
+                      }
+                      setSelectedItem(next)
+                      setCatalog((prev) => prev.map((item) => (item.id === next.id ? next : item)))
+                      toast.success('Modifier group added')
+                    }}
+                    className="w-full rounded-md border border-dashed border-border px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-secondary"
+                  >
                     + Add Modifier Group
                   </button>
                 </div>
               </div>
+              <RecipePanel item={selectedItem} recipe={getRecipeForItem(recipes, selectedItem.id)} />
               <div className="flex items-center justify-between rounded-md border border-border px-3 py-2.5">
                 <div>
                   <p className="text-sm font-medium text-foreground">86 / Availability</p>
                   <p className="text-xs text-muted-foreground">Toggle off to hide from POS and web menus</p>
                 </div>
-                <Switch defaultChecked={!selectedItem.soldOut} />
+                <Switch
+                  checked={availability[selectedItem.id] !== false}
+                  onCheckedChange={(checked) => setAvailability((prev) => ({ ...prev, [selectedItem.id]: checked }))}
+                />
               </div>
               <div className="flex gap-2 pt-2">
-                <button className="flex-1 rounded-md bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90">
+                <button
+                  onClick={() => {
+                    const price = Number.parseFloat(draftPrice)
+                    if (!draftName.trim() || Number.isNaN(price)) {
+                      toast.error('Name and a valid price are required')
+                      return
+                    }
+                    const next = {
+                      ...selectedItem,
+                      name: draftName.trim(),
+                      description: draftDescription,
+                      price,
+                      daypart: draftDaypart,
+                      soldOut: availability[selectedItem.id] === false,
+                    }
+                    setSelectedItem(next)
+                    setCatalog((prev) => prev.map((item) => (item.id === next.id ? next : item)))
+                    toast.success('Item saved', { description: 'Kept in this browser session only.' })
+                  }}
+                  className="flex-1 rounded-md bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
+                >
                   Save Changes
                 </button>
-                <button className="rounded-md border border-border px-4 py-2.5 text-sm font-medium text-foreground hover:bg-secondary">
+                <button
+                  onClick={() => {
+                    setDraftName(selectedItem.name)
+                    setDraftDescription(selectedItem.description)
+                    setDraftPrice(selectedItem.price.toFixed(2))
+                    setDraftDaypart(selectedItem.daypart ?? 'All Day')
+                    toast.message('Edits discarded')
+                  }}
+                  className="rounded-md border border-border px-4 py-2.5 text-sm font-medium text-foreground hover:bg-secondary"
+                >
                   Cancel
                 </button>
               </div>
@@ -278,14 +394,139 @@ export default function MenuBuilderPage() {
         )}
       </main>
 
-      {importOpen && <ImportMenuModal onClose={() => setImportOpen(false)} />}
+      {importOpen && (
+        <ImportMenuModal
+          onClose={() => setImportOpen(false)}
+          onImport={(imported) => {
+            setCatalog((prev) => [...imported, ...prev])
+            setAvailability((prev) => ({
+              ...prev,
+              ...Object.fromEntries(imported.map((item) => [item.id, true])),
+            }))
+            if (imported[0]) {
+              setActiveCategory(imported[0].category)
+              setSelectedItem(imported[0])
+            }
+            setImportOpen(false)
+            toast.success(`Imported ${imported.length} item${imported.length === 1 ? '' : 's'}`)
+          }}
+        />
+      )}
     </>
   )
 }
 
-function ImportMenuModal({ onClose }: { onClose: () => void }) {
+function RecipePanel({ item, recipe }: { item: MenuItem; recipe?: Recipe }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div>
+      <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Kitchen recipe</label>
+      <p className="mb-2 text-[11px] leading-relaxed text-muted-foreground">
+        Description is for guests. Ingredients and cook steps below come from Recipes and update when you save.
+      </p>
+      {recipe ? (
+        <div className="space-y-2 rounded-md border border-border px-3 py-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium text-foreground">{recipe.name}</p>
+            <span className="text-xs text-muted-foreground">
+              {recipe.station} · {recipe.prepMinutes} min · {recipe.yieldQty} plate{recipe.yieldQty === 1 ? '' : 's'}
+            </span>
+          </div>
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Ingredients</p>
+            <ul className="mt-1 space-y-0.5 text-xs text-foreground">
+              {recipe.ingredients.map((line) => (
+                <li key={line.id}>
+                  {line.qty} {line.unit} {line.name}
+                </li>
+              ))}
+              {recipe.ingredients.length === 0 && (
+                <li className="text-muted-foreground">No ingredients saved yet.</li>
+              )}
+            </ul>
+          </div>
+          {recipe.steps.filter(Boolean).length > 0 && (
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Cook steps</p>
+              <ol className="mt-1 list-decimal space-y-0.5 pl-4 text-xs text-foreground">
+                {recipe.steps.filter(Boolean).map((step, index) => (
+                  <li key={`${index}-${step}`}>{step}</li>
+                ))}
+              </ol>
+            </div>
+          )}
+          <Link
+            href={`/admin/recipes?item=${item.id}`}
+            className="inline-block pt-1 text-xs font-semibold text-primary hover:underline"
+          >
+            Edit recipe
+          </Link>
+        </div>
+      ) : (
+        <Link
+          href={`/admin/recipes?item=${item.id}`}
+          className="block w-full rounded-md border border-dashed border-border px-3 py-2 text-center text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
+        >
+          + Create recipe
+        </Link>
+      )}
+    </div>
+  )
+}
+
+function ImportMenuModal({ onClose, onImport }: { onClose: () => void; onImport: (items: MenuItem[]) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [fileName, setFileName] = useState<string | null>(null)
+  const [parsed, setParsed] = useState<MenuItem[]>([])
+  const [warnings, setWarnings] = useState<string[]>([])
+  const [dragging, setDragging] = useState(false)
+
+  function readFile(file: File) {
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      toast.error('Please choose a .csv file')
+      return
+    }
+    void file.text().then((text) => {
+      const rows = parseCsv(text)
+      if (rows.length === 0) {
+        toast.error('That CSV is empty')
+        return
+      }
+      const header = rows[0]
+      const nameIdx = Math.max(headerIndex(header, 'name', 'item'), 0)
+      const priceIdx = headerIndex(header, 'price')
+      const catIdx = headerIndex(header, 'cat')
+      const hasHeader = headerIndex(header, 'name', 'item', 'price', 'cat') >= 0
+      const body = hasHeader ? rows.slice(1) : rows
+      const nextWarnings: string[] = []
+      const items: MenuItem[] = []
+
+      body.forEach((row, index) => {
+        const name = row[nameIdx]?.trim()
+        if (!name) return
+        const priceRaw = (priceIdx >= 0 ? row[priceIdx] : row[1]) ?? ''
+        const price = Number.parseFloat(priceRaw.replace(/[^0-9.]/g, ''))
+        const categoryRaw = (catIdx >= 0 ? row[catIdx] : row[2])?.trim()
+        const category = categoryRaw && menuCategories.includes(categoryRaw) ? categoryRaw : menuCategories[0]
+        if (Number.isNaN(price)) nextWarnings.push(`Missing price on “${name}”`)
+        items.push({
+          id: `imp-${Date.now()}-${index}`,
+          name,
+          description: 'Imported from CSV',
+          price: Number.isNaN(price) ? 0 : price,
+          category,
+          image: '/placeholder.svg',
+        })
+      })
+
+      setFileName(file.name)
+      setParsed(items)
+      setWarnings(nextWarnings)
+      if (items.length === 0) toast.error('No menu rows found')
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center modal-scrim p-4">
       <div className="w-full max-w-lg rounded-xl border border-border bg-card p-5 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-foreground">Import Menu (CSV)</h2>
@@ -293,27 +534,80 @@ function ImportMenuModal({ onClose }: { onClose: () => void }) {
             <X className="size-4" />
           </button>
         </div>
-        <div className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/40 px-6 py-10 text-center">
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".csv,text/csv"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (file) readFile(file)
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault()
+            setDragging(true)
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault()
+            setDragging(false)
+            const file = e.dataTransfer.files[0]
+            if (file) readFile(file)
+          }}
+          className={cn(
+            'flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed bg-muted/40 px-6 py-10 text-center',
+            dragging ? 'border-primary bg-accent' : 'border-border',
+          )}
+        >
           <Upload className="size-8 text-muted-foreground" />
-          <p className="text-sm font-medium text-foreground">Drag & drop your CSV file here</p>
-          <p className="text-xs text-muted-foreground">or click to browse from your computer</p>
-        </div>
+          <p className="text-sm font-medium text-foreground">{fileName ?? 'Drag & drop your CSV file here'}</p>
+          <p className="text-xs text-muted-foreground">Columns: name, price, category — or click to browse</p>
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            downloadCsv('airests-menu-template', ['name', 'price', 'category'], [
+              ['Classic Smash Burger', '12.50', 'Burgers'],
+              ['House Salad', '8.50', 'Salads'],
+              ['Kids Chicken Tenders', '', 'Starters'],
+            ])
+          }
+          className="mt-2 text-xs font-semibold text-primary hover:underline"
+        >
+          Download CSV template
+        </button>
         <div className="mt-4 rounded-lg border border-border bg-secondary/50 p-3">
-          <div className="mb-2 flex items-center gap-2 text-sm font-medium text-foreground">
-            <Check className="size-4 text-success" />
-            48 items validated
-          </div>
-          <div className="flex items-center gap-2 text-sm text-warning">
-            <AlertTriangle className="size-4" />
-            2 warnings — missing price on &quot;Kids Chicken Tenders&quot;, duplicate SKU on &quot;House Salad&quot;
-          </div>
+          {parsed.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Choose a file to validate items before import.</p>
+          ) : (
+            <>
+              <div className="mb-2 flex items-center gap-2 text-sm font-medium text-foreground">
+                <Check className="size-4 text-success" />
+                {parsed.length} item{parsed.length === 1 ? '' : 's'} validated
+              </div>
+              {warnings.length > 0 && (
+                <div className="flex items-start gap-2 text-sm text-warning">
+                  <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                  {warnings.length} warning{warnings.length === 1 ? '' : 's'} — {warnings.slice(0, 2).join('; ')}
+                </div>
+              )}
+            </>
+          )}
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <button onClick={onClose} className="rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary">
             Cancel
           </button>
-          <button className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">
-            Import 48 Items
+          <button
+            disabled={parsed.length === 0}
+            onClick={() => onImport(parsed)}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-40"
+          >
+            Import {parsed.length || ''} {parsed.length === 1 ? 'Item' : 'Items'}
           </button>
         </div>
       </div>

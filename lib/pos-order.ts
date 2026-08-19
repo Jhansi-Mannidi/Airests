@@ -1,10 +1,10 @@
 import {
-  floorTables,
   kitchenTickets,
   menuItems,
   type FloorTable,
   type OrderType,
 } from '@/lib/mock-data'
+import { getLiveTable, getLiveTables } from '@/lib/table-status'
 
 export type PosCartLine = {
   id: string
@@ -28,7 +28,7 @@ const SESSION_KEY = 'airests-pos-order'
 
 export function findFloorTable(tableId: string | null | undefined) {
   if (!tableId) return null
-  return floorTables.find((t) => t.id === tableId) ?? null
+  return getLiveTable(tableId) ?? getLiveTables().find((t) => t.id === tableId) ?? null
 }
 
 export function parseOrderType(value: string | null | undefined): PosOrderType {
@@ -117,6 +117,93 @@ export function loadPosOrder(): { tableId?: string | null; type: string; lines: 
   if (!raw) return null
   try {
     return JSON.parse(raw)
+  } catch {
+    return null
+  }
+}
+
+const SPLIT_KEY = 'airests-pos-split'
+
+export type SplitMode = 'even' | 'seat' | 'item'
+
+export type SplitShare = {
+  id: string
+  label: string
+  amount: number
+  paid: boolean
+}
+
+export type PosSplitPlan = {
+  mode: SplitMode
+  people: number
+  lineOwners: Record<string, string>
+  shares: SplitShare[]
+  total: number
+}
+
+export function roundMoney(value: number) {
+  return Math.round(value * 100) / 100
+}
+
+export function splitEvenAmounts(total: number, people: number) {
+  const count = Math.max(1, people)
+  const cents = Math.round(total * 100)
+  const base = Math.floor(cents / count)
+  const remainder = cents - base * count
+  return Array.from({ length: count }, (_, i) => (base + (i < remainder ? 1 : 0)) / 100)
+}
+
+export function buildSplitShares(input: {
+  mode: SplitMode
+  people: number
+  lines: PosCartLine[]
+  total: number
+  lineOwners: Record<string, string>
+  labels?: string[]
+}): SplitShare[] {
+  const people = Math.max(1, input.people)
+  const labels =
+    input.labels ??
+    (input.mode === 'seat'
+      ? Array.from({ length: people }, (_, i) => `Seat ${i + 1}`)
+      : Array.from({ length: people }, (_, i) => `Person ${i + 1}`))
+
+  if (input.mode === 'even' || input.lines.length === 0) {
+    return splitEvenAmounts(input.total, people).map((amount, i) => ({
+      id: `share-${i + 1}`,
+      label: labels[i],
+      amount,
+      paid: false,
+    }))
+  }
+
+  const subtotal = input.lines.reduce((s, l) => s + l.unitPrice * l.qty, 0) || 1
+  const raw = labels.map((_, i) => {
+    const id = `share-${i + 1}`
+    const shareSub = input.lines.reduce((s, line) => {
+      const owner = input.lineOwners[line.id] ?? 'share-1'
+      return owner === id ? s + line.unitPrice * line.qty : s
+    }, 0)
+    return { id, label: labels[i], amount: input.total * (shareSub / subtotal) }
+  })
+
+  const rounded = raw.map((s) => ({ ...s, amount: roundMoney(s.amount), paid: false }))
+  const drift = roundMoney(input.total - rounded.reduce((s, x) => s + x.amount, 0))
+  if (rounded.length) rounded[rounded.length - 1].amount = roundMoney(rounded[rounded.length - 1].amount + drift)
+  return rounded.filter((s) => s.amount > 0)
+}
+
+export function savePosSplit(plan: PosSplitPlan) {
+  if (typeof window === 'undefined') return
+  sessionStorage.setItem(SPLIT_KEY, JSON.stringify(plan))
+}
+
+export function loadPosSplit(): PosSplitPlan | null {
+  if (typeof window === 'undefined') return null
+  const raw = sessionStorage.getItem(SPLIT_KEY)
+  if (!raw) return null
+  try {
+    return JSON.parse(raw) as PosSplitPlan
   } catch {
     return null
   }

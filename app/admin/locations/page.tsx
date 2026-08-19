@@ -1,19 +1,29 @@
 'use client'
 
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { AdminTopbar } from '@/components/admin/admin-topbar'
 import { ConnectivityChip } from '@/components/shared/status-pill'
 import { brand, type ConnectivityState } from '@/lib/mock-data'
-import { MoreVertical, User, Phone, Users, Search } from 'lucide-react'
+import { MoreVertical, User, Phone, Users, Search, X, Download } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { downloadCsv, fileStamp } from '@/lib/export'
 
 const connectivityFilters: Array<ConnectivityState | 'all'> = ['all', 'online', 'syncing', 'offline']
+
+type LocationRow = (typeof brand.locations)[number]
+
+const emptyForm = { name: '', address: '', city: 'Austin, TX', manager: '', phone: '' }
 
 export default function LocationsPage() {
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState<ConnectivityState | 'all'>('all')
+  const [sites, setSites] = useState<LocationRow[]>(() => brand.locations.map((loc) => ({ ...loc })))
+  const [addOpen, setAddOpen] = useState(false)
+  const [form, setForm] = useState(emptyForm)
+  const [menuId, setMenuId] = useState<string | null>(null)
 
-  const locations = brand.locations.filter((loc) => {
+  const locations = sites.filter((loc) => {
     if (status !== 'all' && loc.connectivity !== status) return false
     const q = query.trim().toLowerCase()
     if (!q) return true
@@ -25,6 +35,31 @@ export default function LocationsPage() {
     )
   })
 
+  function addLocation() {
+    if (!form.name.trim() || !form.address.trim()) {
+      toast.error('Name and address are required')
+      return
+    }
+    setSites((prev) => [
+      ...prev,
+      {
+        id: `loc-${Date.now()}`,
+        name: form.name.trim(),
+        city: form.city.trim() || 'Austin, TX',
+        address: form.address.trim(),
+        manager: form.manager.trim() || 'Unassigned',
+        phone: form.phone.trim() || '(512) 555-0100',
+        staffCount: 0,
+        salesToday: 0,
+        orders: 0,
+        connectivity: 'offline',
+      },
+    ])
+    toast.success('Location added', { description: 'Demo only — not saved to a server.' })
+    setForm(emptyForm)
+    setAddOpen(false)
+  }
+
   return (
     <>
       <AdminTopbar title="Locations" />
@@ -32,7 +67,7 @@ export default function LocationsPage() {
         <div className="w-full">
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground">
-              {locations.length} of {brand.locations.length} locations under {brand.tenantName}
+              {locations.length} of {sites.length} locations under {brand.tenantName}
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative">
@@ -48,15 +83,38 @@ export default function LocationsPage() {
                 <button
                   key={filter}
                   onClick={() => setStatus(filter)}
-                  className={cn(
-                    'rounded-full px-2.5 py-1 text-xs font-medium capitalize transition-colors',
-                    status === filter ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground',
-                  )}
+                  className={cn(status === filter ? 'chip chip-active capitalize' : 'chip chip-muted capitalize')}
                 >
                   {filter}
                 </button>
               ))}
-              <button className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
+              <button
+                onClick={() =>
+                  downloadCsv(
+                    `airests-locations-${fileStamp()}`,
+                    ['Name', 'City', 'Address', 'Manager', 'Phone', 'Staff', 'Sales today', 'Orders', 'Status'],
+                    locations.map((loc) => [
+                      loc.name,
+                      loc.city,
+                      loc.address,
+                      loc.manager,
+                      loc.phone,
+                      loc.staffCount,
+                      loc.salesToday.toFixed(2),
+                      loc.orders,
+                      loc.connectivity,
+                    ]),
+                  )
+                }
+                className="flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary"
+              >
+                <Download className="size-4" />
+                Export
+              </button>
+              <button
+                onClick={() => setAddOpen(true)}
+                className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              >
                 + Add Location
               </button>
             </div>
@@ -66,53 +124,124 @@ export default function LocationsPage() {
               No locations match this filter.
             </p>
           ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {locations.map((loc) => (
-              <div key={loc.id} className="rounded-xl border border-border bg-card p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{loc.name}</p>
-                    <p className="text-xs text-muted-foreground">{loc.address}</p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {locations.map((loc) => (
+                <div key={loc.id} className="relative rounded-xl border border-border bg-card p-4 transition-shadow hover:shadow-hover">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{loc.name}</p>
+                      <p className="text-xs text-muted-foreground">{loc.address}</p>
+                    </div>
+                    <button
+                      onClick={() => setMenuId((id) => (id === loc.id ? null : loc.id))}
+                      className="text-muted-foreground hover:text-foreground"
+                      aria-label={`${loc.name} actions`}
+                    >
+                      <MoreVertical className="size-4" />
+                    </button>
                   </div>
-                  <button className="text-muted-foreground hover:text-foreground">
-                    <MoreVertical className="size-4" />
-                  </button>
+                  {menuId === loc.id && (
+                    <div className="absolute right-3 top-10 z-10 w-40 rounded-lg border border-border bg-card p-1 shadow-elevated">
+                      <button
+                        className="w-full rounded-md px-2.5 py-1.5 text-left text-xs font-medium hover:bg-secondary"
+                        onClick={() => {
+                          toast.message(loc.name, { description: `${loc.manager} · ${loc.phone}` })
+                          setMenuId(null)
+                        }}
+                      >
+                        View details
+                      </button>
+                      <button
+                        className="w-full rounded-md px-2.5 py-1.5 text-left text-xs font-medium text-danger hover:bg-secondary"
+                        onClick={() => {
+                          setSites((prev) => prev.filter((site) => site.id !== loc.id))
+                          toast.success('Location removed from this session')
+                          setMenuId(null)
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                  <div className="mt-3 flex items-center justify-between">
+                    <ConnectivityChip state={loc.connectivity} />
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Sales Today</p>
+                      <p className="font-mono text-sm font-semibold tabular-nums text-foreground">
+                        ${loc.salesToday.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Orders</p>
+                      <p className="font-mono text-sm font-semibold tabular-nums text-foreground">{loc.orders}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 space-y-1.5 border-t border-border pt-3 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <User className="size-3.5 shrink-0" />
+                      <span className="truncate">
+                        Manager: <span className="text-foreground">{loc.manager}</span>
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Phone className="size-3.5 shrink-0" />
+                      {loc.phone}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Users className="size-3.5 shrink-0" />
+                      {loc.staffCount} staff members
+                    </div>
+                  </div>
                 </div>
-                <div className="mt-3 flex items-center justify-between">
-                  <ConnectivityChip state={loc.connectivity} />
-                </div>
-                <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border pt-3">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Sales Today</p>
-                    <p className="font-mono text-sm font-semibold tabular-nums text-foreground">
-                      ${loc.salesToday.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Orders</p>
-                    <p className="font-mono text-sm font-semibold tabular-nums text-foreground">{loc.orders}</p>
-                  </div>
-                </div>
-                <div className="mt-3 space-y-1.5 border-t border-border pt-3 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-1.5">
-                    <User className="size-3.5 shrink-0" />
-                    <span className="truncate">Manager: <span className="text-foreground">{loc.manager}</span></span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Phone className="size-3.5 shrink-0" />
-                    {loc.phone}
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Users className="size-3.5 shrink-0" />
-                    {loc.staffCount} staff members
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
           )}
         </div>
       </main>
+
+      {addOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center modal-scrim p-4">
+          <div className="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-base font-semibold">Add location</h2>
+              <button onClick={() => setAddOpen(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="size-4" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              {(
+                [
+                  ['name', 'Name', 'Riverside Grill — East Austin'],
+                  ['address', 'Address', '1200 E 6th St, Austin, TX'],
+                  ['city', 'City', 'Austin, TX'],
+                  ['manager', 'Manager', 'Elena Cruz'],
+                  ['phone', 'Phone', '(512) 555-0100'],
+                ] as const
+              ).map(([key, label, placeholder]) => (
+                <label key={key} className="block text-xs font-medium text-muted-foreground">
+                  {label}
+                  <input
+                    value={form[key]}
+                    onChange={(e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))}
+                    placeholder={placeholder}
+                    className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </label>
+              ))}
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button onClick={() => setAddOpen(false)} className="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-secondary">
+                Cancel
+              </button>
+              <button onClick={addLocation} className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+                Add location
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

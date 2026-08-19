@@ -10,7 +10,11 @@ import { CartRail, type CartLine } from '@/components/pos/cart-rail'
 import { ModifierDialog } from '@/components/pos/modifier-dialog'
 import { menuCategories, menuItems, getItemDiet, type DietType, type MenuItem } from '@/lib/mock-data'
 import { DietMark, dietFilters } from '@/components/shared/diet-mark'
+import { CategoryTabs } from '@/components/motion/category-tabs'
+import { Stagger, StaggerItem } from '@/components/motion/primitives'
+import { AnimatePresence, LayoutGroup, m } from 'framer-motion'
 import { initialLinesForTable, loadPosOrder, resolvePosContext, savePosOrder } from '@/lib/pos-order'
+import { seatTable } from '@/lib/table-status'
 import { cn } from '@/lib/utils'
 
 export default function OrderBuildingPage() {
@@ -46,6 +50,9 @@ function OrderBuildingContent() {
     }
     setQuery('')
     setReady(true)
+    if (ctx.table?.status === 'open') {
+      seatTable(ctx.table.id)
+    }
   }, [orderKey, ctx.table, ctx.orderType])
 
   React.useEffect(() => {
@@ -93,40 +100,40 @@ function OrderBuildingContent() {
   }
 
   return (
-    <div className="flex h-dvh flex-col bg-background font-sans">
+    <div className="pos-canvas flex h-dvh flex-col font-sans">
       <PosTopBar title={ctx.title} backHref={ctx.table ? '/pos/floor-plan' : '/pos'} />
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
         <div className={cn('min-h-0 flex-1 flex-col overflow-hidden', mobileTab === 'menu' ? 'flex' : 'hidden lg:flex')}>
-          <div className="flex gap-2 overflow-x-auto border-b border-border bg-card px-3 py-2.5 md:px-6 md:py-3">
-            {menuCategories.map((c) => (
-              <button
-                key={c}
-                onClick={() => setCategory(c)}
-                className={cn(
-                  'shrink-0 rounded-full px-3 py-1.5 text-sm font-medium transition-colors md:px-4',
-                  category === c ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary',
-                )}
-              >
-                {c}
-              </button>
-            ))}
+          <div className="border-b border-border bg-card px-3 py-2.5 md:px-6 md:py-3">
+            <CategoryTabs items={[...menuCategories]} value={category} onChange={setCategory} layoutId="pos-menu-category" />
           </div>
           <div className="flex items-center gap-2 overflow-x-auto border-b border-border px-3 py-2 md:px-6">
-            {dietFilters.map((filter) => (
-              <button
-                key={filter.id}
-                type="button"
-                onClick={() => setDietFilter(filter.id)}
-                className={cn(
-                  'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-colors',
-                  dietFilter === filter.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground',
-                )}
-              >
-                {filter.id !== 'all' && <DietMark diet={filter.id} size="sm" />}
-                {filter.label}
-              </button>
-            ))}
+            <LayoutGroup id="pos-diet">
+              {dietFilters.map((filter) => (
+                <button
+                  key={filter.id}
+                  type="button"
+                  onClick={() => setDietFilter(filter.id)}
+                  className={cn(
+                    'relative inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
+                    dietFilter === filter.id ? 'text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {dietFilter === filter.id && (
+                    <m.span
+                      layoutId="pos-diet-pill"
+                      className="absolute inset-0 rounded-full bg-primary shadow-sm"
+                      transition={{ type: 'spring', stiffness: 400, damping: 34 }}
+                    />
+                  )}
+                  <span className="relative z-10 inline-flex items-center gap-1.5">
+                    {filter.id !== 'all' && <DietMark diet={filter.id} size="sm" />}
+                    {filter.label}
+                  </span>
+                </button>
+              ))}
+            </LayoutGroup>
             <div className="relative min-w-[10rem] flex-1 md:max-w-xs">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <input
@@ -144,46 +151,49 @@ function OrderBuildingContent() {
                 No {category.toLowerCase()} match{query ? ` “${query}”` : dietFilter !== 'all' ? ` this ${dietFilter === 'veg' ? 'veg' : 'non-veg'} filter` : ''}.
               </p>
             ) : (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                {items.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => handleItemTap(item)}
-                    disabled={item.soldOut}
-                    className={cn(
-                      'group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card text-left shadow-sm transition-all',
-                      item.soldOut ? 'opacity-60' : 'hover:border-primary/50 hover:shadow-elevated',
-                    )}
-                  >
-                    <div className="relative h-28 w-full overflow-hidden bg-muted sm:h-36 lg:h-44">
-                      <Image
-                        src={item.image || '/placeholder.svg'}
-                        alt={item.name}
-                        fill
-                        className={cn('object-cover transition-transform', !item.soldOut && 'group-hover:scale-105')}
-                        sizes="200px"
-                      />
-                      {item.soldOut && (
-                        <span className="absolute right-2 top-2 rounded-full bg-danger px-2 py-0.5 text-[10px] font-semibold text-danger-foreground">
-                          Sold Out
-                        </span>
-                      )}
-                      <span className="absolute left-2 top-2 rounded-md bg-white/95 p-1 shadow-sm">
-                        <DietMark diet={getItemDiet(item)} />
-                      </span>
-                    </div>
-                    <div className="flex flex-1 flex-col gap-1 px-2.5 py-2.5 sm:px-3 sm:py-4">
-                      <p className="line-clamp-2 text-sm font-medium leading-tight text-foreground">{item.name}</p>
-                      <div className="mt-auto flex items-center justify-between gap-2">
-                        <p className="font-mono text-sm font-semibold tabular-nums text-foreground">
-                          ${item.price.toFixed(2)}
-                        </p>
-                        <DietMark diet={getItemDiet(item)} showLabel size="sm" />
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
+              <AnimatePresence mode="wait">
+                <Stagger key={`${category}-${dietFilter}-${query}`} className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4" delay={0.035}>
+                  {items.map((item) => (
+                    <StaggerItem key={item.id} hover>
+                      <m.button
+                        type="button"
+                        onClick={() => handleItemTap(item)}
+                        disabled={item.soldOut}
+                        whileHover={item.soldOut ? undefined : { y: -3 }}
+                        whileTap={item.soldOut ? undefined : { scale: 0.98 }}
+                        className={cn(
+                          'group relative flex w-full flex-col overflow-hidden rounded-xl border border-border bg-card text-left shadow-sm',
+                          item.soldOut ? 'opacity-60' : 'hover:border-primary/50 hover:shadow-elevated',
+                        )}
+                      >
+                        <div className="relative h-28 w-full overflow-hidden bg-muted sm:h-36 lg:h-44">
+                          <Image
+                            src={item.image || '/placeholder.svg'}
+                            alt={item.name}
+                            fill
+                            className={cn('object-cover transition-transform duration-500', !item.soldOut && 'group-hover:scale-105')}
+                            sizes="200px"
+                          />
+                          {item.soldOut && (
+                            <span className="absolute right-2 top-2 rounded-full bg-danger px-2 py-0.5 text-[10px] font-semibold text-danger-foreground">
+                              Sold Out
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-1 flex-col gap-1 px-2.5 py-2.5 sm:px-3 sm:py-4">
+                          <p className="line-clamp-2 text-sm font-medium leading-tight text-foreground">{item.name}</p>
+                          <div className="mt-auto flex items-center justify-between gap-2">
+                            <p className="font-mono text-sm font-semibold tabular-nums text-foreground">
+                              ${item.price.toFixed(2)}
+                            </p>
+                            <DietMark diet={getItemDiet(item)} showLabel size="sm" />
+                          </div>
+                        </div>
+                      </m.button>
+                    </StaggerItem>
+                  ))}
+                </Stagger>
+              </AnimatePresence>
             )}
           </div>
         </div>
@@ -194,7 +204,10 @@ function OrderBuildingContent() {
           onInc={inc}
           onDec={dec}
           onRemove={remove}
-          onSend={() => toast.success('Order sent to kitchen', { description: `${ctx.title} notified` })}
+          onSend={() => {
+            if (ctx.table) seatTable(ctx.table.id)
+            toast.success('Order sent to kitchen', { description: `${ctx.title} notified` })
+          }}
           onPay={() => router.push(`/pos/checkout?${ctx.query}`)}
         />
 

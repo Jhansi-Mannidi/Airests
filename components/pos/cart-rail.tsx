@@ -3,6 +3,7 @@
 import { Minus, Plus, X, Send, CreditCard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { AnimatePresence, m } from 'framer-motion'
 
 export type CartLine = {
   id: string
@@ -53,8 +54,16 @@ export function CartRail({
           </div>
         ) : (
           <ul className="flex flex-col gap-4">
-            {lines.map((l) => (
-              <li key={l.id} className="flex gap-3">
+            <AnimatePresence initial={false}>
+              {lines.map((l) => (
+                <m.li
+                  key={l.id}
+                  layout
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: 16 }}
+                  className="flex gap-3"
+                >
                 <div className="flex flex-1 flex-col">
                   <div className="flex items-start justify-between gap-2">
                     <p className="text-sm font-medium leading-tight text-foreground">{l.name}</p>
@@ -79,8 +88,9 @@ export function CartRail({
                     </span>
                   </div>
                 </div>
-              </li>
-            ))}
+                </m.li>
+              ))}
+            </AnimatePresence>
           </ul>
         )}
       </div>

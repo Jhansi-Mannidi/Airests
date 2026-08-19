@@ -4,32 +4,17 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { AirestsMark } from '@/components/shared/airests-mark'
-import {
-  LayoutDashboard,
-  MapPin,
-  UtensilsCrossed,
-  Users,
-  BarChart3,
-  Plug,
-  Settings,
-  CreditCard,
-  LayoutGrid,
-  X,
-} from 'lucide-react'
-
-const navItems = [
-  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/admin/locations', label: 'Locations', icon: MapPin },
-  { href: '/admin/menu', label: 'Menu', icon: UtensilsCrossed },
-  { href: '/admin/staff', label: 'Staff', icon: Users },
-  { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
-  { href: '/admin/integrations', label: 'Integrations', icon: Plug },
-  { href: '/admin/settings', label: 'Settings', icon: Settings },
-  { href: '/admin/billing', label: 'Billing', icon: CreditCard },
-]
+import { adminNavItems } from '@/lib/admin-nav'
+import { canSeeAppOverview, useSession } from '@/lib/session'
+import { LayoutGrid, X } from 'lucide-react'
+import { LayoutGroup, m } from 'framer-motion'
 
 export function AdminSidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname()
+  const session = useSession()
+  const name = session?.name ?? 'Elena Cruz'
+  const role = session?.role ?? 'General Manager'
+  const initials = session?.initials ?? 'EC'
 
   return (
     <div className="flex h-full w-64 flex-col border-r border-sidebar-border bg-sidebar">
@@ -44,43 +29,60 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
         )}
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2">
-        {navItems.map((item) => {
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
+        <LayoutGroup id="admin-nav">
+        {adminNavItems.map((item, index) => {
           const isActive = item.href === '/admin' ? pathname === '/admin' : pathname.startsWith(item.href)
           return (
-            <Link
+            <m.div
               key={item.href}
-              href={item.href}
-              onClick={onClose}
-              className={cn(
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                  : 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-              )}
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.018, duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
             >
-              <item.icon className="size-4" />
-              {item.label}
-            </Link>
+              <Link
+                href={item.href}
+                onClick={onClose}
+                className={cn(
+                  'relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'text-sidebar-primary-foreground'
+                    : 'text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                )}
+              >
+                {isActive && (
+                  <m.span
+                    layoutId="admin-nav-pill"
+                    className="absolute inset-0 rounded-lg bg-sidebar-primary shadow-sm"
+                    transition={{ type: 'spring', stiffness: 420, damping: 36 }}
+                  />
+                )}
+                <item.icon className="relative z-10 size-4" />
+                <span className="relative z-10">{item.label}</span>
+              </Link>
+            </m.div>
           )
         })}
+        </LayoutGroup>
       </nav>
 
       <div className="border-t border-sidebar-border p-3">
-        <Link
-          href="/"
-          className="mb-1 flex items-center gap-3 rounded-md px-2 py-2 text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-        >
-          <LayoutGrid className="size-4" />
-          All Apps Overview
-        </Link>
-        <div className="flex items-center gap-3 rounded-md px-2 py-2">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-xs font-semibold text-sidebar-accent-foreground">
-            EC
+        {canSeeAppOverview(role) && (
+          <Link
+            href="/"
+            className="mb-1 flex items-center gap-3 rounded-lg px-2 py-2 text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          >
+            <LayoutGrid className="size-4" />
+            All Apps Overview
+          </Link>
+        )}
+        <div className="flex items-center gap-3 rounded-lg bg-sidebar-accent/70 px-2 py-2">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-semibold text-accent-foreground">
+            {initials}
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-sidebar-foreground">Elena Cruz</p>
-            <p className="truncate text-xs text-muted-foreground">General Manager</p>
+            <p className="truncate text-sm font-medium text-sidebar-foreground">{name}</p>
+            <p className="truncate text-xs text-muted-foreground">{role}</p>
           </div>
         </div>
       </div>

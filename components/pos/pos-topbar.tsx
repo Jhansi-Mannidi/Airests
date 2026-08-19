@@ -7,13 +7,31 @@ import { ThemeToggle } from '@/components/shared/theme-toggle'
 import { AppSwitcher } from '@/components/shared/app-switcher'
 import { Button } from '@/components/ui/button'
 import { AirestsMark } from '@/components/shared/airests-mark'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { brand, type ConnectivityState } from '@/lib/mock-data'
+import { useSession } from '@/lib/session'
 import { cn } from '@/lib/utils'
+import * as React from 'react'
+
+function LiveClock() {
+  const [now, setNow] = React.useState(() => new Date())
+
+  React.useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 30_000)
+    return () => window.clearInterval(id)
+  }, [])
+
+  return (
+    <span className="tabular-nums" suppressHydrationWarning>
+      {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+    </span>
+  )
+}
 
 export function PosTopBar({
   title,
   backHref,
-  staffName = 'Maria Alvarez',
+  staffName,
   connectivity = 'online',
   pendingSync,
   right,
@@ -25,8 +43,16 @@ export function PosTopBar({
   pendingSync?: number
   right?: React.ReactNode
 }) {
+  const session = useSession()
+  const name = staffName ?? session?.name ?? 'Maria Alvarez'
+  const initials = name
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border bg-card px-3 md:h-[4.5rem] md:px-6">
+    <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border/80 bg-card/90 px-3 backdrop-blur-md md:h-[4.25rem] md:px-6">
       <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3">
         <Link href="/pos" aria-label="Airests POS home" className="shrink-0 rounded-xl py-0.5">
           <AirestsMark showWordmark size="md" className="hidden sm:flex" />
@@ -34,7 +60,7 @@ export function PosTopBar({
         </Link>
         {(backHref || title) && (
           <>
-            <div className="hidden h-8 w-px shrink-0 bg-border sm:block" />
+            <div className="hidden h-7 w-px shrink-0 bg-border sm:block" />
             {backHref && (
               <Button
                 variant="secondary"
@@ -56,11 +82,19 @@ export function PosTopBar({
           </>
         )}
       </div>
-      <div className="flex shrink-0 items-center gap-1 md:gap-3">
+      <div className="flex shrink-0 items-center gap-1.5 md:gap-2.5">
         {right}
-        <div className="hidden items-center gap-1.5 rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground lg:flex">
-          <Clock className="size-3.5 text-muted-foreground" />
-          {staffName}
+        <div className="hidden items-center gap-2 rounded-full border border-border bg-background px-2 py-1 pr-3 lg:flex">
+          <Avatar size="sm" className="bg-accent">
+            <AvatarFallback className="bg-accent text-[10px] font-semibold text-accent-foreground">{initials}</AvatarFallback>
+          </Avatar>
+          <div className="leading-tight">
+            <p className="text-xs font-semibold text-foreground">{name.split(' ')[0]}</p>
+            <p className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <Clock className="size-2.5" />
+              <LiveClock />
+            </p>
+          </div>
         </div>
         <ConnectivityChip state={connectivity} pendingCount={pendingSync} className="hidden sm:inline-flex" />
         <ThemeToggle />

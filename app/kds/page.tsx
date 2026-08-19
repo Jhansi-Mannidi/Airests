@@ -3,9 +3,11 @@
 import { useMemo, useState } from 'react'
 import { KdsTopbar } from '@/components/kds/kds-topbar'
 import { kitchenTickets, type Station } from '@/lib/mock-data'
-import { UtensilsCrossed, ShoppingBag, Bike, Check, Send } from 'lucide-react'
+import { UtensilsCrossed, ShoppingBag, Bike, Check, Send, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { m } from 'framer-motion'
+import { Stagger, StaggerItem } from '@/components/motion/primitives'
 
 const orderTypeIcon = { 'dine-in': UtensilsCrossed, takeout: ShoppingBag, delivery: Bike } as const
 const stationOrder: Station[] = ['Grill', 'Fry', 'Salad']
@@ -16,6 +18,7 @@ export default function ExpoPage() {
   const [ready, setReady] = useState<Set<StationKey>>(new Set())
   const [sent, setSent] = useState<Set<string>>(new Set())
   const [typeFilter, setTypeFilter] = useState<'all' | 'dine-in' | 'takeout' | 'delivery'>('all')
+  const [query, setQuery] = useState('')
 
   const orders = useMemo(() => {
     const map = new Map<string, { orderNumber: string; orderType: string; tableOrName: string; ageMinutes: number; stations: Station[] }>()
@@ -34,8 +37,13 @@ export default function ExpoPage() {
     return Array.from(map.values())
       .filter((o) => !sent.has(o.orderNumber))
       .filter((o) => typeFilter === 'all' || o.orderType === typeFilter)
+      .filter((o) => {
+        const q = query.trim().toLowerCase()
+        if (!q) return true
+        return `${o.orderNumber} ${o.tableOrName} ${o.orderType}`.toLowerCase().includes(q)
+      })
       .sort((a, b) => b.ageMinutes - a.ageMinutes)
-  }, [sent, typeFilter])
+  }, [sent, typeFilter, query])
 
   function toggleStation(orderNumber: string, station: Station) {
     const key: StationKey = `${orderNumber}-${station}`
@@ -52,7 +60,7 @@ export default function ExpoPage() {
   }
 
   return (
-    <div className="flex h-dvh flex-col bg-background">
+    <div className="flex h-dvh flex-col bg-background page-canvas">
       <KdsTopbar active="expo" />
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-card px-4 py-3 md:px-6">
@@ -60,15 +68,21 @@ export default function ExpoPage() {
           <h1 className="font-sans text-lg font-semibold tracking-tight text-foreground">Expo — All Stations</h1>
           <p className="text-sm text-muted-foreground">{orders.length} orders in progress</p>
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search ticket or table…"
+              className="w-full rounded-md border border-border bg-background py-1.5 pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring sm:w-52"
+            />
+          </div>
           {(['all', 'dine-in', 'takeout', 'delivery'] as const).map((type) => (
             <button
               key={type}
               onClick={() => setTypeFilter(type)}
-              className={cn(
-                'rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors',
-                typeFilter === type ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground',
-              )}
+              className={cn(typeFilter === type ? 'chip chip-active capitalize' : 'chip chip-muted capitalize')}
             >
               {type === 'all' ? 'All' : type.replace('-', ' ')}
             </button>
@@ -78,19 +92,21 @@ export default function ExpoPage() {
 
       <main className="flex-1 overflow-y-auto p-4 md:p-6">
         {orders.length === 0 ? (
-          <p className="py-16 text-center text-sm text-muted-foreground">No {typeFilter === 'all' ? '' : typeFilter.replace('-', ' ')} orders in progress.</p>
+          <p className="py-16 text-center text-sm text-muted-foreground">
+            No {query ? `results for “${query}”` : typeFilter === 'all' ? '' : `${typeFilter.replace('-', ' ')} `}orders in progress.
+          </p>
         ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <Stagger className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" delay={0.045}>
           {orders.map((order) => {
             const Icon = orderTypeIcon[order.orderType as keyof typeof orderTypeIcon]
             const escalation = order.ageMinutes > 10 ? 'danger' : order.ageMinutes >= 5 ? 'warning' : 'success'
             const allReady = order.stations.every((s) => ready.has(`${order.orderNumber}-${s}`))
 
             return (
-              <div
-                key={order.orderNumber}
+              <StaggerItem key={order.orderNumber} hover>
+              <m.div
                 className={cn(
-                  'flex flex-col overflow-hidden rounded-xl border bg-card shadow-sm',
+                  'flex h-full flex-col overflow-hidden rounded-xl border bg-card shadow-surface',
                   escalation === 'danger' && 'border-danger/60 ring-1 ring-danger/30',
                   escalation === 'warning' && 'border-warning/50',
                   escalation === 'success' && 'border-border',
@@ -152,10 +168,11 @@ export default function ExpoPage() {
                     Send to Floor
                   </button>
                 </div>
-              </div>
+              </m.div>
+              </StaggerItem>
             )
           })}
-        </div>
+        </Stagger>
         )}
       </main>
     </div>

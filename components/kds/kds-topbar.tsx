@@ -17,7 +17,7 @@ const stations = [
 
 export function KdsTopbar({ active }: { active: string }) {
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-secondary px-3 md:h-[4.5rem] md:px-6">
+    <header className="flex h-14 shrink-0 items-center justify-between border-b border-border/80 bg-card/90 px-3 backdrop-blur-md md:h-[4.5rem] md:px-6">
       <div className="flex min-w-0 items-center gap-2 md:gap-5">
         <Link href="/kds" className="flex shrink-0 items-center" aria-label="Airests home">
           <AirestsMark size="md" className="hidden sm:flex" />
@@ -35,7 +35,7 @@ export function KdsTopbar({ active }: { active: string }) {
               className={cn(
                 'shrink-0 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors md:px-3 md:text-sm',
                 active === s.id
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground',
               )}
             >

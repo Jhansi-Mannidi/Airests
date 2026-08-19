@@ -1,14 +1,22 @@
 import { cn } from '@/lib/utils'
-import { Wifi, WifiOff, RefreshCw, Circle } from 'lucide-react'
+import { Wifi, WifiOff, RefreshCw } from 'lucide-react'
 
 type Tone = 'neutral' | 'info' | 'warning' | 'danger' | 'success'
 
 const toneClasses: Record<Tone, string> = {
   neutral: 'bg-muted text-muted-foreground',
-  info: 'bg-info/15 text-info dark:text-info',
-  warning: 'bg-warning/15 text-warning dark:text-warning',
-  danger: 'bg-danger/15 text-danger dark:text-danger',
-  success: 'bg-success/15 text-success dark:text-success',
+  info: 'bg-info/12 text-info dark:text-info',
+  warning: 'bg-warning/12 text-warning dark:text-warning',
+  danger: 'bg-danger/12 text-danger dark:text-danger',
+  success: 'bg-success/12 text-success dark:text-success',
+}
+
+const dotClasses: Record<Tone, string> = {
+  neutral: 'bg-muted-foreground',
+  info: 'bg-info',
+  warning: 'bg-warning',
+  danger: 'bg-danger',
+  success: 'bg-success',
 }
 
 export function StatusPill({
@@ -24,7 +32,7 @@ export function StatusPill({
 }) {
   return (
     <span className={cn('status-pill', toneClasses[tone], className)}>
-      {dot && <Circle className="size-2 fill-current" strokeWidth={0} />}
+      {dot && <span className={cn('size-1.5 shrink-0 rounded-full', dotClasses[tone])} />}
       {children}
     </span>
   )

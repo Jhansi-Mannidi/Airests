@@ -16,7 +16,7 @@ export default function Icon() {
           alignItems: 'center',
           justifyContent: 'center',
           borderRadius: 8,
-          background: 'linear-gradient(135deg, #14806F 0%, #0B5347 100%)',
+          background: 'linear-gradient(135deg, #FF7A35 0%, #E5651C 100%)',
         }}
       >
         <svg width="21" height="21" viewBox="0 0 24 24" fill="none">

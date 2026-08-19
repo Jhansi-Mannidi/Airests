@@ -93,9 +93,6 @@ export function ModifierDialog({
               sizes="(max-width: 768px) 100vw, 352px"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
-            <span className="absolute left-4 top-4 rounded-md bg-white/95 p-1.5 shadow-sm">
-              <DietMark diet={getItemDiet(item)} />
-            </span>
             <div className="absolute inset-x-0 bottom-0 p-5">
               <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-white/70">{item.category}</p>
               <DialogHeader className="mt-1 gap-1">

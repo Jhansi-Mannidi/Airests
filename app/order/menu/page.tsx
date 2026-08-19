@@ -10,6 +10,9 @@ import { menuCategories, menuItems, getItemDiet, type DietType } from '@/lib/moc
 import { DietMark, dietFilters } from '@/components/shared/diet-mark'
 import { Flame, Leaf } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { CategoryTabs } from '@/components/motion/category-tabs'
+import { Stagger, StaggerItem } from '@/components/motion/primitives'
+import { AnimatePresence, LayoutGroup, m } from 'framer-motion'
 
 export default function MenuBrowsePage() {
   return (
@@ -21,7 +24,7 @@ export default function MenuBrowsePage() {
 
 function MenuBrowseContent() {
   const searchParams = useSearchParams()
-  const initial = searchParams.get('category') ?? 'Burgers'
+  const initial = searchParams.get('category') ?? menuCategories[0]
   const [activeCategory, setActiveCategory] = useState(initial)
   const [query, setQuery] = useState('')
   const [dietFilter, setDietFilter] = useState<'all' | DietType>('all')
@@ -36,40 +39,42 @@ function MenuBrowseContent() {
   })
 
   return (
-    <div className="min-h-dvh bg-background">
+    <div className="min-h-dvh page-canvas">
       <OrderHeader backHref="/order" tableLabel={tableNumber ? `Table ${tableNumber}` : undefined} />
 
       {/* Category quick nav */}
       <div className="sticky top-14 z-30 border-b border-border bg-background/95 backdrop-blur-sm md:top-[4.5rem]">
         <div className="flex gap-1 overflow-x-auto px-4 py-2.5 md:px-8">
-          {menuCategories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={cn(
-                'shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
-                activeCategory === cat ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {cat}
-            </button>
-          ))}
+          <CategoryTabs items={[...menuCategories]} value={activeCategory} onChange={setActiveCategory} layoutId="guest-menu-category" />
         </div>
         <div className="flex flex-wrap items-center gap-2 px-4 pb-3 md:px-8">
-          {dietFilters.map((filter) => (
-            <button
-              key={filter.id}
-              type="button"
-              onClick={() => setDietFilter(filter.id)}
-              className={cn(
-                'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-colors',
-                dietFilter === filter.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {filter.id !== 'all' && <DietMark diet={filter.id} size="sm" />}
-              {filter.label}
-            </button>
-          ))}
+          <LayoutGroup id="guest-diet">
+            {dietFilters.map((filter) => (
+              <button
+                key={filter.id}
+                type="button"
+                onClick={() => setDietFilter(filter.id)}
+                className={cn(
+                  'relative inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors',
+                  dietFilter === filter.id
+                    ? 'text-primary-foreground'
+                    : 'bg-muted text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {dietFilter === filter.id && (
+                  <m.span
+                    layoutId="guest-diet-pill"
+                    className="absolute inset-0 rounded-full bg-primary shadow-sm"
+                    transition={{ type: 'spring', stiffness: 400, damping: 34 }}
+                  />
+                )}
+                <span className="relative z-10 inline-flex items-center gap-1.5">
+                  {filter.id !== 'all' && <DietMark diet={filter.id} size="sm" />}
+                  {filter.label}
+                </span>
+              </button>
+            ))}
+          </LayoutGroup>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -79,49 +84,56 @@ function MenuBrowseContent() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-5xl px-4 py-5 md:px-8">
-        <h1 className="mb-4 font-sans text-xl font-semibold tracking-tight text-foreground">{activeCategory}</h1>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {items.length === 0 && (
-            <p className="col-span-full py-12 text-center text-sm text-muted-foreground">
-              No items match {query ? `“${query}”` : dietFilter !== 'all' ? `this ${dietFilter === 'veg' ? 'veg' : 'non-veg'} filter` : 'this category'}.
-            </p>
-          )}
-          {items
-            .map((item) => (
-              <Link
-                key={item.id}
-                href={`/order/menu/${item.id}`}
-                className={cn(
-                  'flex min-h-[7.5rem] gap-3 rounded-xl border border-border bg-card p-3.5 transition-colors hover:border-primary/40',
-                  item.soldOut && 'pointer-events-none opacity-60',
-                )}
-              >
-                <div className="relative size-28 shrink-0 overflow-hidden rounded-lg bg-muted">
-                  <Image src={item.image || '/placeholder.svg'} alt={item.name} fill className="object-cover" />
-                  <span className="absolute left-1.5 top-1.5 rounded-md bg-white/95 p-1 shadow-sm">
-                    <DietMark diet={getItemDiet(item)} />
-                  </span>
+      <div className="w-full px-4 py-5 md:px-6 lg:px-8">
+        <div className="mb-4 flex items-end justify-between gap-3">
+          <h1 className="font-sans text-xl font-semibold tracking-tight text-foreground">{activeCategory}</h1>
+          <p className="text-sm text-muted-foreground">
+            {items.length} {items.length === 1 ? 'item' : 'items'}
+          </p>
+        </div>
+        <AnimatePresence mode="wait">
+          <Stagger key={`${activeCategory}-${dietFilter}-${query}`} className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" delay={0.04}>
+            {items.length === 0 && (
+              <p className="col-span-full py-16 text-center text-sm text-muted-foreground">
+                No items match {query ? `“${query}”` : dietFilter !== 'all' ? `this ${dietFilter === 'veg' ? 'veg' : 'non-veg'} filter` : 'this category'}.
+              </p>
+            )}
+            {items.map((item) => (
+              <StaggerItem key={item.id} hover>
+                <Link
+                  href={`/order/menu/${item.id}`}
+                  className={cn(
+                    'group flex h-full min-h-[12rem] gap-4 rounded-2xl border border-border bg-card p-4 shadow-surface transition-colors hover:border-primary/40 hover:shadow-hover',
+                    item.soldOut && 'pointer-events-none opacity-60',
+                  )}
+                >
+                <div className="relative size-36 shrink-0 overflow-hidden rounded-xl bg-muted sm:size-40">
+                  <Image
+                    src={item.image || '/placeholder.svg'}
+                    alt={item.name}
+                    fill
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
                   {item.soldOut && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                       <span className="rounded-full bg-card px-2 py-0.5 text-[10px] font-semibold text-foreground">Sold Out</span>
                     </div>
                   )}
                 </div>
-                <div className="flex min-w-0 flex-1 flex-col justify-between">
+                <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5">
                   <div>
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-semibold leading-tight text-foreground">{item.name}</p>
+                      <p className="text-[15px] font-semibold leading-snug text-foreground">{item.name}</p>
                       <DietMark diet={getItemDiet(item)} showLabel size="sm" className="shrink-0" />
                     </div>
-                    <p className="mt-0.5 line-clamp-2 text-xs leading-snug text-muted-foreground">{item.description}</p>
+                    <p className="mt-1.5 line-clamp-2 text-sm leading-snug text-muted-foreground">{item.description}</p>
                   </div>
-                  <div className="mt-1.5 flex items-center gap-2">
-                    <span className="font-mono text-sm font-semibold tabular-nums text-foreground">${item.price.toFixed(2)}</span>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span className="font-mono text-base font-semibold tabular-nums text-foreground">${item.price.toFixed(2)}</span>
                     {item.spice && (
                       <span className="flex items-center gap-0.5 text-xs text-warning">
                         {Array.from({ length: item.spice }).map((_, i) => (
-                          <Flame key={i} className="size-3" />
+                          <Flame key={i} className="size-3.5" />
                         ))}
                       </span>
                     )}
@@ -133,9 +145,11 @@ function MenuBrowseContent() {
                     ))}
                   </div>
                 </div>
-              </Link>
+                </Link>
+              </StaggerItem>
             ))}
-        </div>
+          </Stagger>
+        </AnimatePresence>
       </div>
     </div>
   )
