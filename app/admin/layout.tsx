@@ -1,0 +1,13 @@
+import type { ReactNode } from 'react'
+import { AdminSidebar } from '@/components/admin/admin-sidebar'
+
+export default function AdminLayout({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex h-dvh bg-background">
+      <div className="hidden md:block">
+        <AdminSidebar />
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">{children}</div>
+    </div>
+  )
+}
