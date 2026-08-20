@@ -4,7 +4,8 @@ import { useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { KdsTopbar } from '@/components/kds/kds-topbar'
 import { TicketCard } from '@/components/kds/ticket-card'
-import { kitchenTickets, type Station, type KitchenTicket } from '@/lib/mock-data'
+import { useKitchenTickets } from '@/lib/online-orders'
+import { type Station, type KitchenTicket } from '@/lib/mock-data'
 import { toast } from 'sonner'
 import { Search } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
@@ -21,6 +22,7 @@ export default function KdsStationPage() {
   const params = useParams<{ station: string }>()
   const stationKey = params.station
   const stationName = stationLabels[stationKey] ?? 'Grill'
+  const kitchenTickets = useKitchenTickets()
 
   const [bumped, setBumped] = useState<Set<string>>(new Set())
   const [held, setHeld] = useState<Set<string>>(new Set())
@@ -35,7 +37,7 @@ export default function KdsStationPage() {
         if (!q) return true
         return `${t.orderNumber} ${t.tableOrName} ${t.items.map((i) => i.name).join(' ')}`.toLowerCase().includes(q)
       }),
-    [stationName, bumped, query],
+    [kitchenTickets, stationName, bumped, query],
   )
 
   function handleBump(id: string, orderNumber: string) {
@@ -49,7 +51,7 @@ export default function KdsStationPage() {
     <div className="flex h-dvh flex-col bg-background page-canvas">
       <KdsTopbar active={stationKey} />
 
-      <div className="flex items-center justify-between border-b border-border bg-card px-4 py-3 md:px-6">
+      <div className="flex flex-col gap-3 border-b border-border bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between md:px-6">
         <div>
           <h1 className="font-sans text-lg font-semibold tracking-tight text-foreground">{stationName} Station</h1>
           <p className="text-sm text-muted-foreground">{tickets.length} active tickets</p>
@@ -88,9 +90,9 @@ export default function KdsStationPage() {
           </div>
         ) : (
           <AnimatePresence mode="popLayout">
-          <Stagger className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" delay={0.04}>
+          <Stagger className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" delay={0.04}>
             {tickets.map((ticket) => (
-              <StaggerItem key={ticket.id} hover>
+              <StaggerItem key={ticket.id} hover className="h-full min-h-0">
               <TicketCard
                 ticket={ticket}
                 held={held.has(ticket.id)}
@@ -113,7 +115,7 @@ export default function KdsStationPage() {
         {recalled.length > 0 && (
           <div className="mt-8">
             <h2 className="mb-3 text-sm font-semibold text-foreground">Recently bumped — reopen if needed</h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {recalled.slice(0, 4).map((ticket) => (
                 <TicketCard
                   key={`reopen-${ticket.id}`}

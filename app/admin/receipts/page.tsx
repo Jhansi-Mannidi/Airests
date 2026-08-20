@@ -40,7 +40,7 @@ export default function ReceiptsAdminPage() {
             <p className="text-center">Downtown Austin</p>
             <p className="my-2 border-t border-dashed" />
             <p>Smash Burger ........ $12.50</p>
-            <p>Tax 8.25% ............. $1.03</p>
+            <p>Sales tax 8.25% ............. $1.03</p>
             <p>Card •••• 4242</p>
             <p className="font-bold">Total ................ $13.53</p>
             <p className="my-2 border-t border-dashed" />

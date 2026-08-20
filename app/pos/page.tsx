@@ -23,7 +23,10 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { brand, openChecks } from '@/lib/mock-data'
 import { useLiveTables } from '@/lib/table-status'
+import { ageMinutes, labelForOnlineOrder, useOnlineOrders } from '@/lib/online-orders'
+import { formatUsd } from '@/lib/us-format'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 import { Stagger, StaggerItem } from '@/components/motion/primitives'
 
 const orderTypes = [
@@ -69,6 +72,8 @@ function initials(name: string) {
 
 export default function PosHomePage() {
   const liveTables = useLiveTables()
+  const { orders: onlineOrders, now } = useOnlineOrders()
+  const seenOnlineIds = React.useRef<Set<string> | null>(null)
   const [showOffline, setShowOffline] = React.useState(false)
   const [checkFilter, setCheckFilter] = React.useState('All')
   const [checkQuery, setCheckQuery] = React.useState('')
@@ -80,8 +85,36 @@ export default function PosHomePage() {
     setPeriod(periodLabel())
   }, [])
 
-  const checkTypes = ['All', ...Array.from(new Set(openChecks.map((c) => c.type)))]
-  const visibleChecks = openChecks
+  React.useEffect(() => {
+    const ids = new Set(onlineOrders.map((order) => order.id))
+    if (seenOnlineIds.current === null) {
+      seenOnlineIds.current = ids
+      return
+    }
+    for (const order of onlineOrders) {
+      if (!seenOnlineIds.current.has(order.id)) {
+        toast.success(`Online order ${order.orderNumber}`, {
+          description: `${labelForOnlineOrder(order)} · sent to kitchen`,
+        })
+      }
+    }
+    seenOnlineIds.current = ids
+  }, [onlineOrders])
+
+  const onlineChecks = onlineOrders.map((order) => ({
+    id: order.id,
+    label: `${order.fulfillment === 'delivery' ? 'Delivery' : order.tableNumber ? `Table ${order.tableNumber}` : 'Pickup'} ${order.orderNumber}`,
+    tableId: null as string | null,
+    orderType: (order.tableNumber ? 'dine-in' : order.fulfillment === 'delivery' ? 'delivery' : 'pickup') as const,
+    server: order.guestName || 'Online',
+    elapsed: `${ageMinutes(order.placedAt, now)}m`,
+    total: order.total,
+    type: 'Online',
+    href: `/pos/online/${order.id}`,
+  }))
+  const allChecks = [...onlineChecks, ...openChecks]
+  const checkTypes = ['All', ...Array.from(new Set(allChecks.map((c) => c.type)))]
+  const visibleChecks = allChecks
     .filter((c) => checkFilter === 'All' || c.type === checkFilter)
     .filter((c) => {
       const q = checkQuery.trim().toLowerCase()
@@ -92,11 +125,12 @@ export default function PosHomePage() {
     .sort((a, b) => elapsedMinutes(b.elapsed) - elapsedMinutes(a.elapsed))
 
   const openTableCount = liveTables.filter((t) => t.status === 'open').length
-  const agingCount = openChecks.filter((c) => elapsedMinutes(c.elapsed) >= 30).length
-  const openTotal = openChecks.reduce((sum, c) => sum + c.total, 0)
+  const agingCount = allChecks.filter((c) => elapsedMinutes(c.elapsed) >= 30).length
+  const openTotal = allChecks.reduce((sum, c) => sum + c.total, 0)
   const downtown = brand.locations[0]
   const takeoutOpen = openChecks.filter((c) => c.type === 'Takeout').length
   const pickupOpen = openChecks.filter((c) => c.type === 'Pickup').length
+  const onlineOpen = onlineOrders.filter((order) => order.status === 'in-kitchen').length
 
   const orderMeta: Record<string, string> = {
     Takeout: takeoutOpen === 1 ? '1 check open' : `${takeoutOpen} checks open`,
@@ -113,7 +147,7 @@ export default function PosHomePage() {
           <Button
             variant="ghost"
             size="sm"
-            className="hidden h-8 text-xs text-muted-foreground md:inline-flex"
+            className="hidden h-8 text-xs text-muted-foreground sm:inline-flex"
             onClick={() => setShowOffline((v) => !v)}
           >
             {showOffline ? 'Back online' : 'Simulate offline'}
@@ -122,9 +156,9 @@ export default function PosHomePage() {
       />
       {showOffline && <OfflineBanner />}
 
-      <main className="flex min-h-0 flex-1 flex-col gap-5 overflow-hidden p-4 md:flex-row md:p-6 lg:gap-6">
-        <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-5 overflow-y-auto pb-2">
-          <header className="flex flex-wrap items-start justify-between gap-4">
+      <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 md:flex-row md:gap-6 md:overflow-hidden md:p-6">
+        <section className="flex w-full min-w-0 flex-col gap-4 md:min-h-0 md:flex-1 md:gap-5 md:overflow-y-auto">
+          <header className="shrink-0">
             <div>
               <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-border/80 bg-card/80 px-2.5 py-1 text-[11px] font-medium text-muted-foreground shadow-sm">
                 <span className="size-1.5 rounded-full bg-success" />
@@ -133,7 +167,7 @@ export default function PosHomePage() {
                 <MapPin className="size-3" />
                 Downtown
               </div>
-              <h1 className="font-sans text-[1.85rem] font-semibold tracking-[-0.03em] text-foreground md:text-[2rem]">
+              <h1 className="font-sans text-2xl font-semibold tracking-[-0.03em] text-foreground md:text-[2rem]">
                 {hello}, Maria
               </h1>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -144,44 +178,42 @@ export default function PosHomePage() {
             </div>
           </header>
 
-          <div className="overflow-hidden rounded-2xl bg-card/95 shadow-surface ring-1 ring-border/70">
+          <div className="shrink-0 overflow-hidden rounded-2xl bg-card shadow-surface ring-1 ring-border/70">
             <div className="grid grid-cols-2 divide-border sm:grid-cols-4 sm:divide-x">
-              <Kpi label="Location sales" value={`$${downtown.salesToday.toLocaleString(undefined, { minimumFractionDigits: 0 })}`} hint={`${downtown.orders} orders today`} />
-              <Kpi label="Open checks" value={String(openChecks.length)} hint={`$${openTotal.toFixed(0)} on the floor`} />
+              <Kpi label="Location sales" value={formatUsd(downtown.salesToday, 0)} hint={`${downtown.orders} orders today`} />
+              <Kpi label="Open checks" value={String(allChecks.length)} hint={`$${openTotal.toFixed(0)} on the floor`} />
               <Kpi label="Tables open" value={String(openTableCount)} hint={`${liveTables.length} on the floor plan`} />
               <Kpi label="Aging" value={String(agingCount)} hint="Open longer than 30 min" tone={agingCount > 0 ? 'warning' : 'default'} />
             </div>
           </div>
 
-          <div>
-            <div className="mb-3 flex items-end justify-between">
-              <div>
-                <h2 className="text-sm font-semibold tracking-tight text-foreground">Start an order</h2>
-                <p className="text-xs text-muted-foreground">Choose how the guest is served</p>
-              </div>
+          <div className="relative z-0 shrink-0">
+            <div className="mb-3">
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">Start an order</h2>
+              <p className="text-xs text-muted-foreground">Choose how the guest is served</p>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.2fr_1fr] lg:gap-4">
+            <div className="relative isolate grid grid-cols-1 gap-3 overflow-hidden lg:grid-cols-[1.2fr_1fr] lg:gap-4">
               <Link
                 href="/pos/floor-plan"
-                className="pos-ink group relative flex min-h-[16rem] flex-col justify-between overflow-hidden rounded-2xl p-6 shadow-surface transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:min-h-[22rem] lg:p-7"
+                className="pos-ink group relative z-0 flex flex-col justify-between overflow-hidden rounded-2xl p-4 shadow-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-6 md:transition-transform md:duration-200 md:hover:-translate-y-0.5 lg:min-h-[22rem] lg:p-7"
               >
                 <div className="pointer-events-none absolute -right-8 -top-10 size-44 rounded-full bg-primary/25 blur-3xl" />
                 <div className="pointer-events-none absolute -bottom-16 left-10 size-52 rounded-full bg-primary/10 blur-3xl" />
                 <div className="relative flex items-start justify-between">
-                  <span className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                  <span className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm sm:size-12">
                     <UtensilsCrossed className="size-5" />
                   </span>
                   <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium tracking-wide text-white/80">
                     Most used
                   </span>
                 </div>
-                <div className="relative">
-                  <p className="text-3xl font-semibold tracking-[-0.04em]">Dine-In</p>
+                <div className="relative mt-4">
+                  <p className="text-2xl font-semibold tracking-[-0.04em] sm:text-3xl">Dine-In</p>
                   <p className="mt-2 max-w-sm text-sm leading-relaxed text-white/70">
                     Seat the party on Main Dining, Patio, or Bar, then build the check at the table.
                   </p>
-                  <div className="mt-5 flex items-center justify-between gap-3">
+                  <div className="mt-4 flex items-center justify-between gap-3 sm:mt-5">
                     <p className="text-sm font-medium text-white/80">{openTableCount} tables ready to seat</p>
                     <span className="inline-flex items-center gap-1 text-sm font-semibold text-primary">
                       Open floor
@@ -191,12 +223,12 @@ export default function PosHomePage() {
                 </div>
               </Link>
 
-              <Stagger className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-1" delay={0.06}>
+              <Stagger className="relative z-0 grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-1" delay={0.06}>
                 {orderTypes.map(({ label, icon: Icon, href, desc }) => (
-                  <StaggerItem key={label} hover>
+                  <StaggerItem key={label}>
                     <Link
                       href={href}
-                      className="group flex items-center gap-4 rounded-2xl bg-card/95 p-4 shadow-sm ring-1 ring-border/70 transition-all hover:-translate-y-0.5 hover:shadow-surface hover:ring-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="group relative z-0 flex items-center gap-4 overflow-hidden rounded-2xl bg-card p-4 shadow-sm ring-1 ring-border/70 transition-colors hover:shadow-surface hover:ring-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                     <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
                       <Icon className="size-5" />
@@ -218,16 +250,19 @@ export default function PosHomePage() {
             </div>
           </div>
 
-          <div>
+          <div className="relative z-0 shrink-0">
             <h2 className="mb-3 text-sm font-semibold tracking-tight text-foreground">Shift operations</h2>
-            <div className="grid grid-cols-2 overflow-hidden rounded-2xl bg-card/95 shadow-sm ring-1 ring-border/70 sm:grid-cols-4">
+            <div className="grid grid-cols-2 overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border/70 sm:grid-cols-4">
               {shiftOps.map(({ href, label, hint, icon: Icon }, index) => (
                 <Link
                   key={href}
                   href={href}
                   className={cn(
-                    'flex items-center gap-3 px-4 py-4 transition-colors hover:bg-secondary/80',
-                    index > 0 && 'border-t border-border/80 sm:border-l sm:border-t-0',
+                    'flex items-center gap-3 px-3 py-3.5 transition-colors hover:bg-secondary/80 sm:px-4 sm:py-4',
+                    index % 2 === 1 && 'border-l border-border/80',
+                    index >= 2 && 'border-t border-border/80',
+                    index > 0 && 'sm:border-l',
+                    'sm:border-t-0',
                   )}
                 >
                   <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/80 bg-background text-foreground">
@@ -243,23 +278,25 @@ export default function PosHomePage() {
           </div>
         </section>
 
-        <aside className="flex min-h-[22rem] w-full shrink-0 flex-col overflow-hidden rounded-2xl bg-card/95 shadow-surface ring-1 ring-border/70 md:min-h-0 md:w-[400px]">
-          <div className="border-b border-border/80 px-5 py-4">
+        <aside className="relative z-10 isolate mb-[max(0.75rem,env(safe-area-inset-bottom))] flex w-full flex-col rounded-2xl bg-card shadow-surface ring-1 ring-border/70 md:mb-0 md:min-h-0 md:w-[400px] md:overflow-hidden">
+          <div className="border-b border-border/80 px-4 py-4 sm:px-5">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-sm font-semibold tracking-tight text-foreground">Open checks</h2>
-                <p className="mt-0.5 text-xs text-muted-foreground">Oldest first · tap to resume</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {onlineOpen > 0 ? `${onlineOpen} online · tap to open` : 'Oldest first · tap to resume'}
+                </p>
               </div>
               <div className="text-right">
                 <p className="font-mono text-base font-semibold tabular-nums tracking-tight text-foreground">
                   ${openTotal.toFixed(2)}
                 </p>
                 <p className="text-[11px] text-muted-foreground">
-                  {visibleChecks.length} of {openChecks.length}
+                  {visibleChecks.length} of {allChecks.length}
                 </p>
               </div>
             </div>
-            <div className="mt-3 flex gap-1 overflow-x-auto rounded-lg bg-secondary p-1">
+            <div className="mt-3 flex gap-1 overflow-x-auto no-scrollbar rounded-lg bg-secondary p-1">
               {checkTypes.map((type) => (
                 <button
                   key={type}
@@ -287,22 +324,25 @@ export default function PosHomePage() {
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="bg-card md:min-h-0 md:flex-1 md:overflow-y-auto">
             {visibleChecks.map((chk, index) => {
               const minutes = elapsedMinutes(chk.elapsed)
               const aging = minutes >= 45
               const watch = minutes >= 30 && !aging
               const table = chk.tableId ? liveTables.find((t) => t.id === chk.tableId) : undefined
-              const href = chk.tableId
-                ? `/pos/order?table=${chk.tableId}&type=${chk.orderType}`
-                : `/pos/order?type=${chk.orderType}`
+              const href =
+                'href' in chk && typeof chk.href === 'string'
+                  ? chk.href
+                  : chk.tableId
+                    ? `/pos/order?table=${chk.tableId}&type=${chk.orderType}`
+                    : `/pos/order?type=${chk.orderType}`
 
               return (
                 <Link
                   key={chk.id}
                   href={href}
                   className={cn(
-                    'flex gap-0 transition-colors hover:bg-secondary/60',
+                    'relative z-0 flex gap-0 bg-card transition-colors hover:bg-secondary/60',
                     index !== 0 && 'border-t border-border/70',
                   )}
                 >

@@ -242,7 +242,7 @@ export default function CartPage() {
             <span className="font-mono tabular-nums">${subtotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-muted-foreground">
-            <span>Tax (8.25%)</span>
+            <span>Sales tax (8.25%)</span>
             <span className="font-mono tabular-nums">${tax.toFixed(2)}</span>
           </div>
           <div className="flex justify-between border-t border-border pt-1.5 font-semibold text-foreground">
@@ -252,7 +252,7 @@ export default function CartPage() {
         </FadeSection>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 border-t border-border bg-card p-4">
+      <div className="fixed inset-x-0 bottom-0 border-t border-border bg-card p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <div className="mx-auto max-w-2xl">
           <Link
             href="/order/checkout"

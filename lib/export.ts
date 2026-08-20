@@ -83,7 +83,7 @@ export function printReport(title: string, sections: ReportSection[], subtitle?:
     return
   }
   popup.document.write(`<!doctype html>
-<html>
+<html lang="en-US">
   <head>
     <title>${title}</title>
     <style>
@@ -135,7 +135,7 @@ export function printPdf(title: string, headers: string[], rows: ExportCell[][],
     return
   }
   popup.document.write(`<!doctype html>
-<html>
+<html lang="en-US">
   <head>
     <title>${title}</title>
     <style>
@@ -161,7 +161,10 @@ export function printPdf(title: string, headers: string[], rows: ExportCell[][],
 }
 
 export function fileStamp() {
-  return new Date().toISOString().slice(0, 10)
+  const date = new Date()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${month}-${day}-${date.getFullYear()}`
 }
 
 export function parseCsv(text: string): string[][] {

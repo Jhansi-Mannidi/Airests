@@ -332,10 +332,10 @@ export default function ReportsPage() {
   return (
     <>
       <AdminTopbar title="Reports" />
-      <main className="flex-1 overflow-y-auto p-4 md:p-6">
-        <div className="w-full space-y-5">
+      <main className="flex-1 overflow-y-auto p-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] md:p-6">
+        <div className="w-full space-y-4 md:space-y-5">
           <LayoutGroup id="report-tabs">
-            <div className="flex gap-1 overflow-x-auto border-b border-border">
+            <div className="-mx-4 flex gap-0.5 overflow-x-auto border-b border-border px-4 [scrollbar-width:none] md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden">
               {reportTabs.map((tab) => {
                 const active = tab === activeTab
                 return (
@@ -347,7 +347,7 @@ export default function ReportsPage() {
                       setQuery('')
                     }}
                     className={cn(
-                      'relative shrink-0 px-3 py-2.5 text-sm font-medium transition-colors',
+                      'relative h-11 shrink-0 px-3 text-sm font-medium transition-colors',
                       active ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
                     )}
                   >
@@ -366,7 +366,7 @@ export default function ReportsPage() {
           </LayoutGroup>
 
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {(['Today', 'Yesterday', 'Last 7 Days'] as const).map((option) => {
                 const active = range === option
                 return (
@@ -375,42 +375,45 @@ export default function ReportsPage() {
                     type="button"
                     onClick={() => setRange(option)}
                     className={cn(
-                      'inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors',
+                      'inline-flex h-10 shrink-0 items-center gap-2 rounded-full border px-3.5 text-sm font-medium transition-colors',
                       active
                         ? 'border-primary bg-primary text-primary-foreground shadow-[0_6px_16px_rgba(255,122,53,0.28)]'
                         : 'border-border bg-card text-foreground hover:bg-secondary',
                     )}
                   >
                     <Calendar className={cn('size-4', active ? 'text-primary-foreground' : 'text-muted-foreground')} />
-                    {active ? rangeFullLabel[option] : option}
+                    <span className="sm:hidden">{option}</span>
+                    <span className="hidden sm:inline">{active ? rangeFullLabel[option] : option}</span>
                   </button>
                 )
               })}
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+              <div className="relative min-w-0 flex-1 sm:flex-none">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Filter this report…"
-                  className="w-full rounded-full border border-border bg-card py-2 pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring sm:w-56"
+                  className="h-10 w-full rounded-full border border-border bg-card py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring sm:w-56"
                 />
               </div>
-              <Pressable
-                onClick={handleCsv}
-                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground hover:bg-secondary"
-              >
-                <Download className="size-4" />
-                Export CSV
-              </Pressable>
-              <Pressable
-                onClick={handlePdf}
-                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground hover:bg-secondary"
-              >
-                <Download className="size-4" />
-                Export PDF
-              </Pressable>
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                <Pressable
+                  onClick={handleCsv}
+                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-border bg-card px-3.5 text-sm font-medium text-foreground hover:bg-secondary"
+                >
+                  <Download className="size-4" />
+                  CSV
+                </Pressable>
+                <Pressable
+                  onClick={handlePdf}
+                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-border bg-card px-3.5 text-sm font-medium text-foreground hover:bg-secondary"
+                >
+                  <Download className="size-4" />
+                  PDF
+                </Pressable>
+              </div>
             </div>
           </div>
 
@@ -438,7 +441,8 @@ export default function ReportsPage() {
 
               {activeTab === 'Tax Summary' ? (
                 <ReportTable
-                  title={`Tax Summary — ${period}`}
+                  title="Tax Summary"
+                  subtitle={period}
                   headers={['Location', 'Taxable', 'Exempt', 'Tax', 'Rate']}
                   rows={taxRows.map((row) => [row.location, money(row.taxable), money(row.exempt), money(row.tax), row.rate])}
                   empty="No locations match this filter."
@@ -446,7 +450,8 @@ export default function ReportsPage() {
                 />
               ) : activeTab === 'X Report' ? (
                 <ReportTable
-                  title={`X Report — ${period}`}
+                  title="X Report"
+                  subtitle={period}
                   headers={['Terminal', 'Tenders', 'Cash', 'Card', 'Tips', 'Variance']}
                   rows={xRows.map((row) => [row.terminal, row.tenders, money(row.cash), money(row.card), money(row.tips), money(row.variance)])}
                   empty="No terminals match this filter."
@@ -461,7 +466,8 @@ export default function ReportsPage() {
                 />
               ) : activeTab === 'Z Report' ? (
                 <ReportTable
-                  title={`Z Report — ${period}`}
+                  title="Z Report"
+                  subtitle={period}
                   headers={['Sales bucket', 'Net', 'Tax', 'Tips']}
                   rows={zRows.map((row) => [row.bucket, money(row.net), money(row.tax), money(row.tips)])}
                   empty="No Z-close lines match this filter."
@@ -474,7 +480,8 @@ export default function ReportsPage() {
                 />
               ) : activeTab === 'Terminal Reconciliation' ? (
                 <ReportTable
-                  title={`Terminal Reconciliation — ${period}`}
+                  title="Terminal Reconciliation"
+                  subtitle={period}
                   headers={['Batch', 'Terminal', 'Auth', 'Captured', 'Tips', 'Variance']}
                   rows={terminalRows.map((row) => [
                     row.batch,
@@ -490,7 +497,8 @@ export default function ReportsPage() {
               ) : (
                 <>
                   <ReportTable
-                    title={`${activeTab} — ${period}`}
+                    title={activeTab}
+                    subtitle={period}
                     headers={['Server', 'Orders', 'Sales', 'Tips', 'Avg. Check', 'Voids']}
                     rows={visibleSales.map((row) => [
                       row.name,
@@ -517,6 +525,7 @@ export default function ReportsPage() {
                     headers={['Order', 'Time', 'Server', 'Type', 'Tender', 'Total']}
                     rows={transactions.map((t) => [t.id, t.time, t.server, t.type, t.tender, money(t.total)])}
                     empty="No transactions match this filter."
+                    highlightLast
                   />
                 </>
               )}
@@ -525,6 +534,56 @@ export default function ReportsPage() {
         </div>
       </main>
     </>
+  )
+}
+
+function cellTone({
+  value,
+  last,
+  dangerLast,
+  emphasisLast,
+}: {
+  value: string | number
+  last: boolean
+  dangerLast?: boolean
+  emphasisLast?: boolean
+}) {
+  const isVoid = dangerLast && last && Number(value) > 0
+  const isZeroVoid = dangerLast && last && Number(value) === 0
+  const isVariance = emphasisLast && last && String(value).includes('-')
+  return cn(isVoid && 'text-danger', isZeroVoid && 'text-muted-foreground', isVariance && 'text-danger')
+}
+
+function MetricGrid({
+  headers,
+  values,
+  dangerLast,
+  emphasisLast,
+}: {
+  headers: string[]
+  values: (string | number)[]
+  dangerLast?: boolean
+  emphasisLast?: boolean
+}) {
+  return (
+    <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2.5">
+      {headers.map((header, index) => {
+        const last = index === values.length - 1
+        return (
+          <div key={header} className="min-w-0">
+            <dt className="text-[11px] font-medium text-muted-foreground">{header}</dt>
+            <dd
+              className={cn(
+                'mt-0.5 font-mono text-sm font-semibold tabular-nums text-foreground',
+                cellTone({ value: values[index], last, dangerLast, emphasisLast }),
+              )}
+            >
+              {values[index]}
+            </dd>
+          </div>
+        )
+      })}
+    </dl>
   )
 }
 
@@ -537,6 +596,7 @@ function ReportTable({
   empty,
   dangerLast,
   emphasisLast,
+  highlightLast,
 }: {
   title: string
   subtitle?: string
@@ -546,75 +606,125 @@ function ReportTable({
   empty: string
   dangerLast?: boolean
   emphasisLast?: boolean
+  highlightLast?: boolean
 }) {
+  const metricHeaders = headers.slice(1)
+  const highlight = highlightLast || headers[headers.length - 1] === 'Total'
+
   return (
-    <section className="overflow-hidden rounded-xl border border-border bg-card shadow-surface">
-      <div className="border-b border-border px-4 py-3.5">
+    <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-surface">
+      <div className="border-b border-border px-4 py-3.5 sm:px-5">
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-        {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
+        {subtitle && <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{subtitle}</p>}
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border text-left text-xs text-muted-foreground">
-              {headers.map((header, index) => (
-                <th
-                  key={header}
-                  className={cn('px-4 py-2.5 font-medium', index === 0 ? 'text-left' : 'text-right')}
-                >
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, rowIndex) => (
-              <tr key={`${row[0]}-${rowIndex}`} className="border-b border-border/60 last:border-0 hover:bg-secondary/50">
-                {row.map((cell, index) => {
-                  const last = index === row.length - 1
-                  const isVoid = dangerLast && last && Number(cell) > 0
-                  const isVariance = emphasisLast && last && String(cell).includes('-')
-                  return (
-                    <td
-                      key={`${headers[index]}-${index}`}
-                      className={cn(
-                        'px-4 py-2.5',
-                        index === 0 ? 'font-medium text-foreground' : 'text-right font-mono tabular-nums text-foreground',
-                        isVoid && 'text-danger',
-                        dangerLast && last && Number(cell) === 0 && 'text-muted-foreground',
-                        isVariance && 'text-danger',
-                      )}
-                    >
-                      {cell}
-                    </td>
-                  )
-                })}
-              </tr>
-            ))}
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan={headers.length} className="px-4 py-12 text-center text-sm text-muted-foreground">
-                  {empty}
-                </td>
-              </tr>
+
+      {rows.length === 0 ? (
+        <p className="px-4 py-12 text-center text-sm text-muted-foreground">{empty}</p>
+      ) : (
+        <>
+          <ul className="divide-y divide-border md:hidden">
+            {rows.map((row, rowIndex) => {
+              const metrics = highlight ? row.slice(1, -1) : row.slice(1)
+              const metricLabels = highlight ? metricHeaders.slice(0, -1) : metricHeaders
+              const last = row[row.length - 1]
+              return (
+                <li key={`${row[0]}-${rowIndex}`} className="px-4 py-3.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="min-w-0 text-sm font-semibold leading-snug text-foreground">{row[0]}</p>
+                    {highlight && (
+                      <p
+                        className={cn(
+                          'shrink-0 font-mono text-sm font-semibold tabular-nums text-foreground',
+                          cellTone({ value: last, last: true, dangerLast, emphasisLast }),
+                        )}
+                      >
+                        {last}
+                      </p>
+                    )}
+                  </div>
+                  {metricLabels.length > 0 && (
+                    <MetricGrid
+                      headers={metricLabels}
+                      values={metrics}
+                      dangerLast={highlight ? undefined : dangerLast}
+                      emphasisLast={highlight ? undefined : emphasisLast}
+                    />
+                  )}
+                </li>
+              )
+            })}
+            {totals && (
+              <li className="bg-muted/40 px-4 py-3.5">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-sm font-semibold text-foreground">{totals[0]}</p>
+                  {highlight && (
+                    <p className="font-mono text-sm font-semibold tabular-nums text-foreground">{totals[totals.length - 1]}</p>
+                  )}
+                </div>
+                <MetricGrid
+                  headers={highlight ? metricHeaders.slice(0, -1) : metricHeaders}
+                  values={highlight ? totals.slice(1, -1) : totals.slice(1)}
+                />
+              </li>
             )}
-          </tbody>
-          {totals && rows.length > 0 && (
-            <tfoot>
-              <tr className="border-t border-border bg-muted/40 font-medium text-foreground">
-                {totals.map((cell, index) => (
-                  <td
-                    key={`total-${index}`}
-                    className={cn('px-4 py-2.5', index === 0 ? 'text-left' : 'text-right font-mono tabular-nums')}
-                  >
-                    {cell}
-                  </td>
+          </ul>
+
+          <div className="hidden overflow-x-auto md:block">
+            <table className="w-full min-w-[40rem] text-sm">
+              <thead>
+                <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                  {headers.map((header, index) => (
+                    <th
+                      key={header}
+                      className={cn('whitespace-nowrap px-5 py-2.5 font-medium', index === 0 ? 'text-left' : 'text-right')}
+                    >
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, rowIndex) => (
+                  <tr key={`${row[0]}-${rowIndex}`} className="border-b border-border/60 last:border-0 hover:bg-secondary/50">
+                    {row.map((cell, index) => {
+                      const last = index === row.length - 1
+                      return (
+                        <td
+                          key={`${headers[index]}-${index}`}
+                          className={cn(
+                            'whitespace-nowrap px-5 py-2.5',
+                            index === 0 ? 'font-medium text-foreground' : 'text-right font-mono tabular-nums text-foreground',
+                            cellTone({ value: cell, last, dangerLast, emphasisLast }),
+                          )}
+                        >
+                          {cell}
+                        </td>
+                      )
+                    })}
+                  </tr>
                 ))}
-              </tr>
-            </tfoot>
-          )}
-        </table>
-      </div>
+              </tbody>
+              {totals && (
+                <tfoot>
+                  <tr className="border-t border-border bg-muted/40 font-medium text-foreground">
+                    {totals.map((cell, index) => (
+                      <td
+                        key={`total-${index}`}
+                        className={cn(
+                          'whitespace-nowrap px-5 py-2.5',
+                          index === 0 ? 'text-left' : 'text-right font-mono tabular-nums',
+                        )}
+                      >
+                        {cell}
+                      </td>
+                    ))}
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        </>
+      )}
     </section>
   )
 }

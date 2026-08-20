@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
 import type { MenuItem } from '@/lib/mock-data'
+import { emptyUsAddress, formatUsAddress, type UsAddress } from '@/lib/us-address'
 
 export type CartLine = {
   id: string
@@ -20,6 +21,7 @@ type CartContextValue = {
   addLine: (line: Omit<CartLine, 'id'>) => void
   removeLine: (id: string) => void
   updateQuantity: (id: string, quantity: number) => void
+  clearCart: () => void
   subtotal: number
   count: number
   tableNumber: string | null
@@ -30,8 +32,9 @@ type CartContextValue = {
   setScheduledAt: (value: Date | null) => void
   fulfillment: FulfillmentType
   setFulfillment: (value: FulfillmentType) => void
+  deliveryDetails: UsAddress
+  setDeliveryDetails: (value: UsAddress) => void
   deliveryAddress: string
-  setDeliveryAddress: (value: string) => void
 }
 
 const CartContext = createContext<CartContextValue | null>(null)
@@ -42,7 +45,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [when, setWhen] = useState<FulfillmentWhen>('asap')
   const [scheduledAt, setScheduledAt] = useState<Date | null>(null)
   const [fulfillment, setFulfillment] = useState<FulfillmentType>('pickup')
-  const [deliveryAddress, setDeliveryAddress] = useState('1200 E 6th St, Austin, TX')
+  const [deliveryDetails, setDeliveryDetails] = useState<UsAddress>(emptyUsAddress)
+  const deliveryAddress = formatUsAddress(deliveryDetails)
 
   function addLine(line: Omit<CartLine, 'id'>) {
     setLines((prev) => [...prev, { ...line, id: `${line.item.id}-${Date.now()}` }])
@@ -52,6 +56,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }
   function updateQuantity(id: string, quantity: number) {
     setLines((prev) => prev.map((l) => (l.id === id ? { ...l, quantity: Math.max(1, quantity) } : l)))
+  }
+  function clearCart() {
+    setLines([])
   }
 
   const subtotal = useMemo(
@@ -67,6 +74,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         addLine,
         removeLine,
         updateQuantity,
+        clearCart,
         subtotal,
         count,
         tableNumber,
@@ -77,8 +85,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setScheduledAt,
         fulfillment,
         setFulfillment,
+        deliveryDetails,
+        setDeliveryDetails,
         deliveryAddress,
-        setDeliveryAddress,
       }}
     >
       {children}

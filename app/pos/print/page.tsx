@@ -19,7 +19,7 @@ export default function PrintCenterPage() {
             <p className="my-3 border-t border-dashed border-border" />
             <p>Smash Burger ×1 ............ $12.50</p>
             <p className="text-muted-foreground">  American, Medium</p>
-            <p>Tax 8.25% .................... $1.03</p>
+            <p>Sales tax 8.25% .................... $1.03</p>
             <p className="font-bold">Total ....................... $13.53</p>
             <p className="my-3 border-t border-dashed border-border" />
             <p className="text-center">Tip line: __________</p>

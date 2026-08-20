@@ -189,7 +189,7 @@ function RecipesContent() {
               />
             </div>
           </div>
-          <div className="flex-1 space-y-1 overflow-y-auto px-2 pb-3">
+          <div className="max-h-[42vh] flex-1 space-y-1 overflow-y-auto px-2 pb-3 lg:max-h-none">
             {visibleRecipes.map((recipe) => {
               const item = menuItems.find((m) => m.id === recipe.menuItemId)
               const active = !isNew && draft.id === recipe.id

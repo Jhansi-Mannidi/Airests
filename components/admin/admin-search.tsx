@@ -101,7 +101,7 @@ export function AdminSearch() {
       <PopoverTrigger aria-label="Search admin" className="icon-btn inline-flex">
         <Search className="size-4" />
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-[22rem] p-2 sm:w-[26rem]" sideOffset={8}>
+      <PopoverContent align="end" className="w-[min(22rem,calc(100vw-1.5rem))] p-2 sm:w-[26rem]" sideOffset={8}>
         <input
           autoFocus
           value={query}

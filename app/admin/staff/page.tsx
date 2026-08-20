@@ -6,6 +6,7 @@ import { AdminTopbar } from '@/components/admin/admin-topbar'
 import { staff as seedStaff, roles, permissionMatrix } from '@/lib/mock-data'
 import { UserPlus, Check, X, Search, Download } from 'lucide-react'
 import { downloadCsv, fileStamp } from '@/lib/export'
+import { formatUsPhone } from '@/lib/us-format'
 import { cn } from '@/lib/utils'
 import { AnimatePresence, m } from 'framer-motion'
 
@@ -370,11 +371,11 @@ function InviteStaffModal({
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Mobile (SMS)</label>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Mobile phone</label>
             <input
               type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => setPhone(formatUsPhone(e.target.value))}
               placeholder="(512) 555-0140"
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
             />

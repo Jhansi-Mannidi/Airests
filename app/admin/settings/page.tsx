@@ -3,6 +3,8 @@
 import { toast } from 'sonner'
 import { AdminTopbar } from '@/components/admin/admin-topbar'
 import { restaurantProfile, brand } from '@/lib/mock-data'
+import { US_STATES } from '@/lib/us-address'
+import { formatUsPhone } from '@/lib/us-format'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
@@ -26,8 +28,32 @@ export default function SettingsPage() {
                 <input defaultValue={brand.tenantName} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">Primary Location Address</label>
-                <input defaultValue={restaurantProfile.address} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" />
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Street address</label>
+                <input defaultValue="412 Colorado St" autoComplete="street-address" className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" />
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_5.5rem_7rem]">
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">City</label>
+                  <input defaultValue="Austin" autoComplete="address-level2" className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">State</label>
+                  <select defaultValue="TX" autoComplete="address-level1" className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring">
+                    {US_STATES.map((state) => (
+                      <option key={state.code} value={state.code}>
+                        {state.code}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">ZIP</label>
+                  <input defaultValue="78701" autoComplete="postal-code" className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" />
+                </div>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Business phone</label>
+                <input defaultValue={formatUsPhone(brand.locations[0].phone)} autoComplete="tel-national" className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" />
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-muted-foreground">Hours</label>

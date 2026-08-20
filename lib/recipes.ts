@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 export const recipeStations = ['Grill', 'Fry', 'Salad', 'Expo', 'Bar'] as const
 export type RecipeStation = (typeof recipeStations)[number]
 
-export const recipeUnits = ['ea', 'slices', 'oz', 'lb', 'g', 'ml', 'cup', 'tbsp', 'heads'] as const
+export const recipeUnits = ['ea', 'slices', 'oz', 'lb', 'cup', 'tbsp', 'tsp', 'fl oz', 'heads'] as const
 
 export type RecipeIngredient = {
   id: string

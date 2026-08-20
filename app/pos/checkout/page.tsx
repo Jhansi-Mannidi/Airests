@@ -231,7 +231,7 @@ function CheckoutContent() {
             <Row label="Subtotal" value={subtotal} />
             {discount > 0 && applied && <Row label={`Discount — ${applied.name}`} value={-discount} tone="success" />}
             {serviceCharge > 0 && <Row label="Service Charge (20%, party of 6+)" value={serviceCharge} />}
-            <Row label="Tax (8.25%)" value={tax} />
+            <Row label="Sales tax (8.25%)" value={tax} />
           </div>
 
           <div className="mt-4 flex items-center justify-between border-t border-border pt-4">

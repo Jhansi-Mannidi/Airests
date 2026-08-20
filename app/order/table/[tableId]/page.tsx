@@ -3,6 +3,7 @@
 import { useParams, useRouter } from 'next/navigation'
 import { AirestsMark } from '@/components/shared/airests-mark'
 import { ThemeToggle } from '@/components/shared/theme-toggle'
+import { AppSwitcher } from '@/components/shared/app-switcher'
 import { useCart } from '@/components/order/cart-context'
 import { restaurantProfile } from '@/lib/mock-data'
 import { UtensilsCrossed } from 'lucide-react'
@@ -21,7 +22,10 @@ export default function QrTableEntryPage() {
     <div className="flex min-h-dvh flex-col page-canvas">
       <header className="flex items-center justify-between px-4 py-3">
         <AirestsMark size="lg" />
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <AppSwitcher />
+        </div>
       </header>
 
       <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">

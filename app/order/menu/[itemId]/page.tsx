@@ -94,7 +94,7 @@ export default function ItemDetailPage() {
       <OrderHeader backHref="/order/menu" />
 
       <m.div
-        className="relative h-64 w-full overflow-hidden sm:h-80 md:h-[28rem]"
+        className="relative h-52 w-full overflow-hidden sm:h-80 md:h-[28rem]"
         initial={{ opacity: 0, scale: 1.04 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
@@ -206,9 +206,9 @@ export default function ItemDetailPage() {
         </section>
       </FadeSection>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 px-4 py-3 backdrop-blur-md md:px-8 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        <div className="mx-auto flex w-full max-w-lg items-center justify-center gap-3">
-          <div className="flex items-center gap-1 rounded-full border border-border bg-background p-1">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 px-3 py-3 backdrop-blur-md md:px-8 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="mx-auto flex w-full max-w-lg items-center gap-2 sm:justify-center sm:gap-3">
+          <div className="flex shrink-0 items-center gap-1 rounded-full border border-border bg-background p-1">
             <button
               type="button"
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
@@ -233,7 +233,7 @@ export default function ItemDetailPage() {
             onClick={handleAddToCart}
             disabled={item.soldOut}
             whileTap={item.soldOut ? undefined : { scale: 0.985 }}
-            className="inline-flex h-12 min-w-[11.5rem] items-center justify-center gap-3 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-[0_8px_22px_rgba(255,122,53,0.28)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-[0_8px_22px_rgba(255,122,53,0.28)] disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:min-w-[11.5rem] sm:gap-3 sm:px-5"
           >
             <span>{item.soldOut ? 'Sold out' : 'Add to Cart'}</span>
             {!item.soldOut && <span className="font-mono tabular-nums">${total.toFixed(2)}</span>}

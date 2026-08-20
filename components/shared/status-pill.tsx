@@ -59,7 +59,8 @@ export function ConnectivityChip({
     return (
       <StatusPill tone="warning" className={className}>
         <RefreshCw className="size-3.5 animate-spin" />
-        Offline — Syncing
+        <span className="sm:hidden">Syncing</span>
+        <span className="hidden sm:inline">Offline — Syncing</span>
       </StatusPill>
     )
   }

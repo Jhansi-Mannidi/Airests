@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 import { AirestsMark } from '@/components/shared/airests-mark'
 import { ThemeToggle } from '@/components/shared/theme-toggle'
+import { AppSwitcher } from '@/components/shared/app-switcher'
 import { Check, Upload, FileSpreadsheet, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { headerIndex, parseCsv } from '@/lib/export'
@@ -81,7 +82,10 @@ export default function OnboardingWizardPage() {
     <div className="flex min-h-dvh flex-col page-canvas">
       <header className="flex h-[4.5rem] shrink-0 items-center justify-between border-b border-border px-4 md:px-6">
         <AirestsMark size="lg" />
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <AppSwitcher />
+        </div>
       </header>
 
       <div className="border-b border-border bg-card px-4 py-4 md:px-6">

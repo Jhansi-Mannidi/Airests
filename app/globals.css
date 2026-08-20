@@ -117,32 +117,32 @@
 .dark {
   color-scheme: dark;
 
-  /* Airests dark theme — same orange brand on a warm charcoal canvas */
-  --background: #1C1612;
-  --foreground: #FFF8F0;
-  --card: #261F19;
-  --card-foreground: #FFF8F0;
-  --popover: #2C241C;
-  --popover-foreground: #FFF8F0;
+  /* Airests dark theme — orange brand on a true charcoal (zinc) canvas */
+  --background: #09090B;
+  --foreground: #FAFAFA;
+  --card: #18181B;
+  --card-foreground: #FAFAFA;
+  --popover: #18181B;
+  --popover-foreground: #FAFAFA;
   --primary: #FF7A35;
   --primary-hover: #FF955C;
   --primary-foreground: #FFFFFF;
-  --secondary: #2C241C;
-  --secondary-foreground: #FFF8F0;
-  --muted: #2C241C;
-  --muted-foreground: #B8A99A;
-  --accent: #3D2818;
-  --accent-foreground: #FFB088;
+  --secondary: #27272A;
+  --secondary-foreground: #FAFAFA;
+  --muted: #27272A;
+  --muted-foreground: #A1A1AA;
+  --accent: #27272A;
+  --accent-foreground: #FFB089;
   --destructive: #EF4444;
-  --destructive-foreground: #FFF8F0;
-  --border: #3A3228;
-  --input: #3A3228;
+  --destructive-foreground: #FAFAFA;
+  --border: #3F3F46;
+  --input: #3F3F46;
   --ring: #FF7A35;
 
   --success: #22C55E;
-  --success-foreground: #06210F;
+  --success-foreground: #052E16;
   --warning: #F59E0B;
-  --warning-foreground: #241300;
+  --warning-foreground: #1C1505;
   --danger: #EF4444;
   --danger-foreground: #2A0A0A;
   --info: #38BDF8;
@@ -152,15 +152,15 @@
   --chart-2: #F59E0B;
   --chart-3: #38BDF8;
   --chart-4: #A78BFA;
-  --chart-5: #B8A99A;
+  --chart-5: #A1A1AA;
 
-  --sidebar: #1C1612;
-  --sidebar-foreground: #FFF8F0;
+  --sidebar: #09090B;
+  --sidebar-foreground: #FAFAFA;
   --sidebar-primary: #FF7A35;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #2C241C;
-  --sidebar-accent-foreground: #FFF8F0;
-  --sidebar-border: #3A3228;
+  --sidebar-accent: #27272A;
+  --sidebar-accent-foreground: #FAFAFA;
+  --sidebar-border: #3F3F46;
   --sidebar-ring: #FF7A35;
 
   --shadow-elevated: 0 12px 40px rgba(0, 0, 0, 0.55);
@@ -180,9 +180,13 @@
     background: color-mix(in srgb, var(--primary) 28%, transparent);
     color: var(--foreground);
   }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
   body {
     @apply bg-background text-foreground;
     letter-spacing: -0.011em;
+    -webkit-tap-highlight-color: transparent;
   }
   h1,
   h2,
@@ -253,8 +257,8 @@
 
   .icon-btn {
     display: inline-flex;
-    width: 2.25rem;
-    height: 2.25rem;
+    width: 2.5rem;
+    height: 2.5rem;
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
@@ -270,7 +274,7 @@
   }
 
   .modal-scrim {
-    background: color-mix(in srgb, #1c1917 42%, transparent);
+    background: color-mix(in srgb, #09090b 52%, transparent);
     backdrop-filter: blur(6px);
   }
 }
@@ -293,13 +297,25 @@
       transparent 58%
     );
   }
+  .dark .page-canvas {
+    background-image:
+      radial-gradient(920px 380px at 0% -12%, color-mix(in srgb, var(--primary) 5%, transparent), transparent 58%),
+      radial-gradient(640px 280px at 100% 0%, color-mix(in srgb, var(--primary) 3%, transparent), transparent 52%);
+  }
+  .dark .pos-canvas {
+    background-image: radial-gradient(
+      900px 420px at 0% -8%,
+      color-mix(in srgb, var(--primary) 5%, transparent),
+      transparent 58%
+    );
+  }
   .pos-ink {
-    background: #1c1917;
-    color: #fff8f0;
+    background: #18181b;
+    color: #fafafa;
   }
   .dark .pos-ink {
-    background: #14110e;
-    color: #fff8f0;
+    background: #111113;
+    color: #fafafa;
   }
   .status-pill {
     display: inline-flex;
@@ -310,6 +326,20 @@
     font-size: 0.75rem;
     font-weight: 600;
     line-height: 1.25rem;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .icon-btn {
+    width: 2.25rem;
+    height: 2.25rem;
   }
 }
 

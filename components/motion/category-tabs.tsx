@@ -16,7 +16,7 @@ export function CategoryTabs({
 }) {
   return (
     <LayoutGroup id={layoutId}>
-      <div className="flex gap-1 overflow-x-auto">
+      <div className="flex gap-1 overflow-x-auto no-scrollbar">
         {items.map((item) => {
           const active = item === value
           return (

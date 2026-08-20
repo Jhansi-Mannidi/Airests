@@ -38,21 +38,21 @@ export function TicketCard({
       exit={{ opacity: 0, scale: 0.96 }}
       whileHover={{ y: -2 }}
       className={cn(
-        'flex flex-col overflow-hidden rounded-xl border bg-card shadow-surface',
+        'flex h-full min-h-[18rem] flex-col overflow-hidden rounded-xl border bg-card shadow-surface',
         escalation === 'danger' && 'border-danger/60 ring-1 ring-danger/30',
         escalation === 'warning' && 'border-warning/50',
         escalation === 'success' && 'border-border',
       )}
     >
-      <div className="flex items-center justify-between border-b border-border/80 px-4 py-2.5">
-        <div className="flex items-center gap-2">
-          <Icon className="size-4 text-muted-foreground" />
-          <span className="font-mono text-sm font-bold tabular-nums text-foreground">{ticket.orderNumber}</span>
-          <span className="text-sm text-muted-foreground">{ticket.tableOrName}</span>
+      <div className="grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border/80 px-4 py-2.5">
+        <div className="flex min-w-0 items-center gap-2">
+          <Icon className="size-4 shrink-0 text-muted-foreground" />
+          <span className="shrink-0 font-mono text-sm font-bold tabular-nums text-foreground">{ticket.orderNumber}</span>
+          <span className="truncate text-sm text-muted-foreground">{ticket.tableOrName}</span>
         </div>
         <span
           className={cn(
-            'flex items-center gap-1 rounded-full px-2.5 py-1 font-mono text-sm font-bold tabular-nums',
+            'flex shrink-0 items-center justify-center rounded-full px-2.5 py-1 font-mono text-sm font-bold tabular-nums',
             escalation === 'danger' && 'bg-danger/15 text-danger',
             escalation === 'warning' && 'bg-warning/15 text-warning',
             escalation === 'success' && 'bg-success/15 text-success',
@@ -62,22 +62,23 @@ export function TicketCard({
         </span>
       </div>
 
-      <ul className="flex-1 px-4 py-3">
+      <ul className="min-h-0 flex-1 px-4 py-3">
         {ticket.items.map((item, i) => (
           <li key={i} className="border-b border-border/60 py-1.5 text-sm last:border-0">
-            <p className="font-medium text-foreground">{item.name}</p>
+            <p className="font-medium leading-snug text-foreground">{item.name}</p>
             {item.modifiers && item.modifiers.length > 0 && (
-              <p className="text-xs text-muted-foreground">{item.modifiers.join(', ')}</p>
+              <p className="text-xs leading-snug text-muted-foreground">{item.modifiers.join(', ')}</p>
             )}
           </li>
         ))}
       </ul>
 
-      <div className="flex items-center gap-2 border-t border-border/80 p-2.5">
+      <div className="mt-auto grid shrink-0 grid-cols-[1fr_auto_auto] items-stretch gap-2 border-t border-border/80 p-2.5">
         {onRecall ? (
           <button
+            type="button"
             onClick={onRecall}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
+            className="col-span-3 flex h-11 items-center justify-center gap-1.5 rounded-lg bg-primary text-sm font-semibold text-primary-foreground hover:opacity-90"
           >
             <RotateCcw className="size-4" />
             Reopen
@@ -85,22 +86,25 @@ export function TicketCard({
         ) : (
           <>
             <button
+              type="button"
               onClick={onBump}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+              className="flex h-11 items-center justify-center gap-1.5 rounded-lg bg-primary text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
             >
               <Check className="size-4" />
               Bump
             </button>
             <button
+              type="button"
               onClick={onHold}
-              className="rounded-lg border border-border px-2.5 py-2 text-xs font-semibold text-muted-foreground hover:bg-secondary"
+              className="flex h-11 min-w-14 items-center justify-center rounded-lg border border-border px-3 text-xs font-semibold text-muted-foreground hover:bg-secondary"
             >
               {held ? 'Release' : 'Hold'}
             </button>
             <button
+              type="button"
               onClick={onFire}
               aria-label="Re-fire"
-              className="flex size-10 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-secondary"
+              className="flex size-11 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-secondary"
             >
               <RotateCcw className="size-4" />
             </button>

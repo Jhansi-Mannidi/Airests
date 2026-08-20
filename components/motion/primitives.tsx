@@ -14,9 +14,9 @@ export function PageEnter({
   return (
     <m.div
       className={cn('min-h-0 min-w-0', className)}
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 1, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.38, ease: motionEase }}
+      transition={{ duration: 0.32, ease: motionEase }}
     >
       {children}
     </m.div>
@@ -84,7 +84,7 @@ export function StaggerItem({
     <m.div
       className={className}
       variants={{
-        hidden: { opacity: 0, y: 16 },
+        hidden: { opacity: 1, y: 16 },
         show: {
           opacity: 1,
           y: 0,

@@ -32,6 +32,7 @@ function MenuBuilderContent() {
   const [importOpen, setImportOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [dietFilter, setDietFilter] = useState<'all' | DietType>('all')
+  const [mobileSheet, setMobileSheet] = useState(false)
   const [availability, setAvailability] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(menuItems.map((m) => [m.id, !m.soldOut])),
   )
@@ -47,6 +48,7 @@ function MenuBuilderContent() {
     if (!item) return
     setSelectedItem(item)
     setActiveCategory(item.category)
+    setMobileSheet(true)
   }, [itemParam, catalog])
 
   useEffect(() => {
@@ -162,7 +164,10 @@ function MenuBuilderContent() {
                 {items.map((item) => (
                   <tr
                     key={item.id}
-                    onClick={() => setSelectedItem(item)}
+                    onClick={() => {
+                      setSelectedItem(item)
+                      setMobileSheet(true)
+                    }}
                     className={cn(
                       'cursor-pointer border-b border-border/60 transition-colors hover:bg-secondary/60',
                       selectedItem?.id === item.id && 'bg-accent',
@@ -221,10 +226,23 @@ function MenuBuilderContent() {
 
         {/* Item detail editor */}
         {selectedItem && (
-          <div className="hidden w-full shrink-0 flex-col overflow-y-auto bg-card lg:flex lg:w-96">
+          <div
+            className={cn(
+              'flex w-full shrink-0 flex-col overflow-y-auto bg-card pt-[env(safe-area-inset-top)]',
+              'fixed inset-0 z-50 lg:static lg:z-auto lg:flex lg:w-96',
+              !mobileSheet && 'max-lg:hidden',
+            )}
+          >
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <h2 className="text-sm font-semibold text-foreground">Item Details</h2>
-              <button onClick={() => setSelectedItem(null)} className="text-muted-foreground hover:text-foreground">
+              <button
+                onClick={() => {
+                  setMobileSheet(false)
+                  setSelectedItem(null)
+                }}
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                aria-label="Close item details"
+              >
                 <X className="size-4" />
               </button>
             </div>

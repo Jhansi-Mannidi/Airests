@@ -95,30 +95,43 @@ export function CartRail({
         )}
       </div>
 
-      <div className="flex flex-col gap-1.5 border-t border-border px-5 py-4 text-sm">
-        <div className="flex justify-between text-muted-foreground">
-          <span>Subtotal</span>
-          <span className="font-mono tabular-nums">${subtotal.toFixed(2)}</span>
+      <div className="shrink-0 border-t border-border bg-card px-4 pb-4 pt-4 shadow-[0_-8px_24px_rgba(28,25,23,0.04)] sm:px-5 lg:pb-5">
+        <div className="space-y-1.5 text-sm">
+          <div className="flex justify-between text-muted-foreground">
+            <span>Subtotal</span>
+            <span className="font-mono tabular-nums">${subtotal.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-muted-foreground">
+            <span>Sales tax (8.25%)</span>
+            <span className="font-mono tabular-nums">${tax.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between border-t border-border pt-2 text-base font-semibold text-foreground">
+            <span>Total</span>
+            <span className="font-mono tabular-nums">${total.toFixed(2)}</span>
+          </div>
         </div>
-        <div className="flex justify-between text-muted-foreground">
-          <span>Tax (8.25%)</span>
-          <span className="font-mono tabular-nums">${tax.toFixed(2)}</span>
-        </div>
-        <div className="mt-1 flex justify-between border-t border-border pt-2 text-base font-semibold text-foreground">
-          <span>Total</span>
-          <span className="font-mono tabular-nums">${total.toFixed(2)}</span>
-        </div>
-      </div>
 
-      <div className="flex flex-col gap-2 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:flex-row sm:px-5 sm:pb-5">
-        <Button variant="outline" size="lg" className="h-11 flex-1 gap-2 bg-transparent" disabled={lines.length === 0} onClick={onSend}>
-          <Send className="size-4" />
-          Send
-        </Button>
-        <Button size="lg" className="h-11 flex-1 gap-2" disabled={lines.length === 0} onClick={onPay}>
-          <CreditCard className="size-4" />
-          Pay
-        </Button>
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <Button
+            variant="outline"
+            size="lg"
+            className="h-12 min-w-0 gap-2 rounded-xl border-border bg-background px-3 text-sm font-semibold text-foreground hover:bg-secondary"
+            disabled={lines.length === 0}
+            onClick={onSend}
+          >
+            <Send className="size-4" />
+            Send
+          </Button>
+          <Button
+            size="lg"
+            className="h-12 min-w-0 gap-2 rounded-xl px-3 text-sm font-semibold shadow-[0_8px_22px_rgba(255,122,53,0.28)]"
+            disabled={lines.length === 0}
+            onClick={onPay}
+          >
+            <CreditCard className="size-4" />
+            Pay
+          </Button>
+        </div>
       </div>
     </aside>
   )

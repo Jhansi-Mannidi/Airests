@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { ArrowLeft, ShoppingBag } from 'lucide-react'
 import { ThemeToggle } from '@/components/shared/theme-toggle'
+import { AppSwitcher } from '@/components/shared/app-switcher'
 import { AirestsMark } from '@/components/shared/airests-mark'
 import { useCart } from '@/components/order/cart-context'
 
@@ -43,6 +44,7 @@ export function OrderHeader({
       </div>
       <div className="flex items-center gap-2">
         <ThemeToggle />
+        <AppSwitcher />
         <Link
           href="/order/cart"
           className="relative flex size-9 items-center justify-center rounded-full text-foreground hover:bg-secondary"

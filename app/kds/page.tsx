@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react'
 import { KdsTopbar } from '@/components/kds/kds-topbar'
-import { kitchenTickets, type Station } from '@/lib/mock-data'
+import { useKitchenTickets } from '@/lib/online-orders'
+import { type Station } from '@/lib/mock-data'
 import { UtensilsCrossed, ShoppingBag, Bike, Check, Send, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -15,6 +16,7 @@ const stationOrder: Station[] = ['Grill', 'Fry', 'Salad']
 type StationKey = `${string}-${Station}`
 
 export default function ExpoPage() {
+  const kitchenTickets = useKitchenTickets()
   const [ready, setReady] = useState<Set<StationKey>>(new Set())
   const [sent, setSent] = useState<Set<string>>(new Set())
   const [typeFilter, setTypeFilter] = useState<'all' | 'dine-in' | 'takeout' | 'delivery'>('all')
@@ -43,7 +45,7 @@ export default function ExpoPage() {
         return `${o.orderNumber} ${o.tableOrName} ${o.orderType}`.toLowerCase().includes(q)
       })
       .sort((a, b) => b.ageMinutes - a.ageMinutes)
-  }, [sent, typeFilter, query])
+  }, [kitchenTickets, sent, typeFilter, query])
 
   function toggleStation(orderNumber: string, station: Station) {
     const key: StationKey = `${orderNumber}-${station}`
@@ -96,27 +98,27 @@ export default function ExpoPage() {
             No {query ? `results for “${query}”` : typeFilter === 'all' ? '' : `${typeFilter.replace('-', ' ')} `}orders in progress.
           </p>
         ) : (
-        <Stagger className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" delay={0.045}>
+        <Stagger className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" delay={0.045}>
           {orders.map((order) => {
             const Icon = orderTypeIcon[order.orderType as keyof typeof orderTypeIcon]
             const escalation = order.ageMinutes > 10 ? 'danger' : order.ageMinutes >= 5 ? 'warning' : 'success'
             const allReady = order.stations.every((s) => ready.has(`${order.orderNumber}-${s}`))
 
             return (
-              <StaggerItem key={order.orderNumber} hover>
+              <StaggerItem key={order.orderNumber} hover className="h-full min-h-0">
               <m.div
                 className={cn(
-                  'flex h-full flex-col overflow-hidden rounded-xl border bg-card shadow-surface',
+                  'flex h-full min-h-[18rem] flex-col overflow-hidden rounded-xl border bg-card shadow-surface',
                   escalation === 'danger' && 'border-danger/60 ring-1 ring-danger/30',
                   escalation === 'warning' && 'border-warning/50',
                   escalation === 'success' && 'border-border',
                 )}
               >
-                <div className="flex items-center justify-between border-b border-border/80 px-4 py-2.5">
-                  <div className="flex items-center gap-2">
-                    <Icon className="size-4 text-muted-foreground" />
-                    <span className="font-mono text-sm font-bold tabular-nums text-foreground">{order.orderNumber}</span>
-                    <span className="text-sm text-muted-foreground">{order.tableOrName}</span>
+                <div className="grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border/80 px-4 py-2.5">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Icon className="size-4 shrink-0 text-muted-foreground" />
+                    <span className="shrink-0 font-mono text-sm font-bold tabular-nums text-foreground">{order.orderNumber}</span>
+                    <span className="truncate text-sm text-muted-foreground">{order.tableOrName}</span>
                   </div>
                   <span
                     className={cn(
@@ -130,7 +132,7 @@ export default function ExpoPage() {
                   </span>
                 </div>
 
-                <ul className="flex-1 space-y-1.5 px-4 py-3">
+                <ul className="min-h-0 flex-1 space-y-1.5 px-4 py-3">
                   {order.stations.map((station) => {
                     const key: StationKey = `${order.orderNumber}-${station}`
                     const isReady = ready.has(key)
@@ -153,12 +155,12 @@ export default function ExpoPage() {
                   })}
                 </ul>
 
-                <div className="border-t border-border/80 p-2.5">
+                <div className="mt-auto shrink-0 border-t border-border/80 p-2.5">
                   <button
                     onClick={() => sendOrder(order.orderNumber)}
                     disabled={!allReady}
                     className={cn(
-                      'flex w-full items-center justify-center gap-1.5 rounded-lg py-2.5 text-sm font-semibold transition-opacity',
+                      'flex h-11 w-full items-center justify-center gap-1.5 rounded-lg text-sm font-semibold transition-opacity',
                       allReady
                         ? 'bg-primary text-primary-foreground hover:opacity-90'
                         : 'cursor-not-allowed bg-muted text-muted-foreground',

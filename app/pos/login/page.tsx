@@ -71,7 +71,7 @@ export default function PosLoginPage() {
           </div>
         </header>
 
-        <main className="flex flex-1 flex-col items-center justify-center gap-8 px-6 pb-10">
+        <main className="flex flex-1 flex-col items-center justify-center gap-6 px-4 pb-8 sm:gap-8 sm:px-6 sm:pb-10">
           <div className="flex flex-col items-center gap-1 text-center">
             <p className="text-sm font-medium text-muted-foreground" suppressHydrationWarning>
               {now?.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} ·{' '}
@@ -105,7 +105,7 @@ export default function PosLoginPage() {
                   onClick={() => press(key)}
                   whileTap={{ scale: 0.94 }}
                   className={cn(
-                    'flex h-16 w-full items-center justify-center rounded-xl border border-border bg-card text-xl font-semibold text-foreground shadow-sm hover:border-primary/35',
+                    'flex h-14 w-full items-center justify-center rounded-xl border border-border bg-card text-xl font-semibold text-foreground shadow-sm hover:border-primary/35 sm:h-16',
                     key === 'clear' && 'text-sm font-medium text-muted-foreground',
                   )}
                   aria-label={key === 'back' ? 'Backspace' : key === 'clear' ? 'Clear' : key}
@@ -119,7 +119,7 @@ export default function PosLoginPage() {
           <p className="text-xs text-muted-foreground">Forgot your PIN? Ask your shift manager to reset it.</p>
         </main>
 
-        <footer className="flex items-center justify-center px-6 pb-6 text-xs text-muted-foreground lg:hidden">
+        <footer className="flex items-center justify-center px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-xs text-muted-foreground lg:hidden">
           {brand.registerName} — {brand.activeLocation}
         </footer>
       </div>

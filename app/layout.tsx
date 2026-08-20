@@ -22,7 +22,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: 'Airests — Restaurant POS Platform',
   description:
-    'Airests is a cloud-connected restaurant Point of Sale platform for quick-service, fast-casual, and full-service restaurants.',
+    'Airests is a U.S. restaurant Point of Sale platform for quick-service, fast-casual, and full-service restaurants.',
   generator: 'v0.app',
 }
 
@@ -33,7 +33,7 @@ export const viewport: Viewport = {
   colorScheme: 'light dark',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#F9F9F9' },
-    { media: '(prefers-color-scheme: dark)', color: '#1C1612' },
+    { media: '(prefers-color-scheme: dark)', color: '#09090B' },
   ],
 }
 
@@ -43,11 +43,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+    <html lang="en-US" className={`${inter.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <body className="min-w-0 overflow-x-hidden antialiased font-sans bg-background text-foreground">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
           <MotionProvider>
-            <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
+            <TooltipProvider delay={200}>{children}</TooltipProvider>
             <Toaster />
           </MotionProvider>
         </ThemeProvider>

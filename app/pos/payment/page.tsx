@@ -179,7 +179,7 @@ function PaymentContent() {
                       </button>
                     ))}
                   </div>
-                  <div className="flex gap-3">
+                  <div className="grid grid-cols-4 gap-2 sm:flex sm:gap-3">
                     {[20, 50, 100, 200].map((bill) => (
                       <button
                         key={bill}

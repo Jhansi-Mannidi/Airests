@@ -83,7 +83,7 @@ export default function FloorPlanPage() {
     <div className="pos-canvas flex h-dvh flex-col font-sans">
       <PosTopBar title="Select a Table" backHref="/pos" />
 
-      <div className="flex flex-wrap items-center gap-2 border-b border-border bg-card px-3 py-2.5 md:px-6 md:py-3">
+      <div className="flex flex-wrap items-center gap-2 overflow-x-auto no-scrollbar border-b border-border bg-card px-3 py-2.5 md:px-6 md:py-3">
         {rooms.map((r) => (
           <button
             key={r}

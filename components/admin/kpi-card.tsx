@@ -23,19 +23,26 @@ export function KpiCard({
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ y: -3 }}
       transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-      className="rounded-xl border border-border bg-card p-4 hover:shadow-hover"
+      className="min-w-0 rounded-2xl border border-border bg-card p-3.5 shadow-surface sm:p-4 hover:shadow-hover"
     >
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">{label}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="min-w-0 text-[11px] font-medium leading-snug text-muted-foreground sm:text-sm">{label}</p>
         {Icon && (
-          <span className="flex size-8 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-            <Icon className="size-4" />
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground sm:size-8">
+            <Icon className="size-3.5 sm:size-4" />
           </span>
         )}
       </div>
-      <p className="mt-3 font-mono text-2xl font-semibold tabular-nums tracking-tight text-foreground">{value}</p>
+      <p className="mt-2.5 font-mono text-[1.35rem] font-semibold tabular-nums tracking-tight text-foreground sm:mt-3 sm:text-2xl">
+        {value}
+      </p>
       {delta && (
-        <p className={cn('mt-1.5 text-xs font-medium', deltaTone === 'success' ? 'text-success' : 'text-danger')}>
+        <p
+          className={cn(
+            'mt-1.5 text-[11px] font-medium leading-snug sm:text-xs',
+            deltaTone === 'success' ? 'text-success' : 'text-danger',
+          )}
+        >
           {delta}
         </p>
       )}

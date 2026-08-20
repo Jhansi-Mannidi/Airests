@@ -44,11 +44,12 @@ function MenuBrowseContent() {
 
       {/* Category quick nav */}
       <div className="sticky top-14 z-30 border-b border-border bg-background/95 backdrop-blur-sm md:top-[4.5rem]">
-        <div className="flex gap-1 overflow-x-auto px-4 py-2.5 md:px-8">
+        <div className="flex gap-1 overflow-x-auto no-scrollbar px-4 py-2.5 md:px-8">
           <CategoryTabs items={[...menuCategories]} value={activeCategory} onChange={setActiveCategory} layoutId="guest-menu-category" />
         </div>
-        <div className="flex flex-wrap items-center gap-2 px-4 pb-3 md:px-8">
+        <div className="flex flex-col gap-2 px-4 pb-3 md:px-8 sm:flex-row sm:flex-wrap sm:items-center">
           <LayoutGroup id="guest-diet">
+            <div className="flex gap-2 overflow-x-auto no-scrollbar">
             {dietFilters.map((filter) => (
               <button
                 key={filter.id}
@@ -74,12 +75,13 @@ function MenuBrowseContent() {
                 </span>
               </button>
             ))}
+            </div>
           </LayoutGroup>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search the menu…"
-            className="h-9 min-w-[10rem] flex-1 rounded-full border border-border bg-card px-4 text-sm outline-none focus:ring-2 focus:ring-ring md:max-w-md"
+            className="h-11 w-full rounded-full border border-border bg-card px-4 text-sm outline-none focus:ring-2 focus:ring-ring sm:h-9 sm:min-w-[10rem] sm:flex-1 md:max-w-md"
           />
         </div>
       </div>
@@ -103,11 +105,11 @@ function MenuBrowseContent() {
                 <Link
                   href={`/order/menu/${item.id}`}
                   className={cn(
-                    'group flex h-full min-h-[12rem] gap-4 rounded-2xl border border-border bg-card p-4 shadow-surface transition-colors hover:border-primary/40 hover:shadow-hover',
+                    'group flex h-full min-h-0 gap-3 rounded-2xl border border-border bg-card p-3 shadow-surface transition-colors hover:border-primary/40 hover:shadow-hover sm:min-h-[12rem] sm:gap-4 sm:p-4',
                     item.soldOut && 'pointer-events-none opacity-60',
                   )}
                 >
-                <div className="relative size-36 shrink-0 overflow-hidden rounded-xl bg-muted sm:size-40">
+                <div className="relative size-24 shrink-0 overflow-hidden rounded-xl bg-muted sm:size-36 md:size-40">
                   <Image
                     src={item.image || '/placeholder.svg'}
                     alt={item.name}

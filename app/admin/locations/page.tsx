@@ -5,6 +5,8 @@ import { toast } from 'sonner'
 import { AdminTopbar } from '@/components/admin/admin-topbar'
 import { ConnectivityChip } from '@/components/shared/status-pill'
 import { brand, type ConnectivityState } from '@/lib/mock-data'
+import { US_STATES, formatUsAddress } from '@/lib/us-address'
+import { formatUsPhone, formatUsd } from '@/lib/us-format'
 import { MoreVertical, User, Phone, Users, Search, X, Download } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { downloadCsv, fileStamp } from '@/lib/export'
@@ -13,7 +15,7 @@ const connectivityFilters: Array<ConnectivityState | 'all'> = ['all', 'online', 
 
 type LocationRow = (typeof brand.locations)[number]
 
-const emptyForm = { name: '', address: '', city: 'Austin, TX', manager: '', phone: '' }
+const emptyForm = { name: '', street: '', city: 'Austin', state: 'TX', zip: '', manager: '', phone: '' }
 
 export default function LocationsPage() {
   const [query, setQuery] = useState('')
@@ -36,19 +38,26 @@ export default function LocationsPage() {
   })
 
   function addLocation() {
-    if (!form.name.trim() || !form.address.trim()) {
-      toast.error('Name and address are required')
+    if (!form.name.trim() || !form.street.trim() || !form.city.trim() || !form.state.trim() || !form.zip.trim()) {
+      toast.error('Name and a full U.S. address are required')
       return
     }
+    const address = formatUsAddress({
+      street: form.street,
+      apt: '',
+      city: form.city,
+      state: form.state,
+      zip: form.zip,
+    })
     setSites((prev) => [
       ...prev,
       {
         id: `loc-${Date.now()}`,
         name: form.name.trim(),
-        city: form.city.trim() || 'Austin, TX',
-        address: form.address.trim(),
+        city: `${form.city.trim()}, ${form.state.trim()}`,
+        address,
         manager: form.manager.trim() || 'Unassigned',
-        phone: form.phone.trim() || '(512) 555-0100',
+        phone: formatUsPhone(form.phone) || '(512) 555-0100',
         staffCount: 0,
         salesToday: 0,
         orders: 0,
@@ -170,7 +179,7 @@ export default function LocationsPage() {
                     <div>
                       <p className="text-xs text-muted-foreground">Sales Today</p>
                       <p className="font-mono text-sm font-semibold tabular-nums text-foreground">
-                        ${loc.salesToday.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        {formatUsd(loc.salesToday)}
                       </p>
                     </div>
                     <div>
@@ -211,25 +220,78 @@ export default function LocationsPage() {
               </button>
             </div>
             <div className="space-y-3">
-              {(
-                [
-                  ['name', 'Name', 'Riverside Grill — East Austin'],
-                  ['address', 'Address', '1200 E 6th St, Austin, TX'],
-                  ['city', 'City', 'Austin, TX'],
-                  ['manager', 'Manager', 'Elena Cruz'],
-                  ['phone', 'Phone', '(512) 555-0100'],
-                ] as const
-              ).map(([key, label, placeholder]) => (
-                <label key={key} className="block text-xs font-medium text-muted-foreground">
-                  {label}
+              <label className="block text-xs font-medium text-muted-foreground">
+                Name
+                <input
+                  value={form.name}
+                  onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                  placeholder="Riverside Grill — East Austin"
+                  className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+                />
+              </label>
+              <label className="block text-xs font-medium text-muted-foreground">
+                Street address
+                <input
+                  value={form.street}
+                  onChange={(e) => setForm((prev) => ({ ...prev, street: e.target.value }))}
+                  placeholder="1200 E 6th St"
+                  autoComplete="street-address"
+                  className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+                />
+              </label>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_5.5rem_7rem]">
+                <label className="col-span-2 block text-xs font-medium text-muted-foreground sm:col-span-1">
+                  City
                   <input
-                    value={form[key]}
-                    onChange={(e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))}
-                    placeholder={placeholder}
+                    value={form.city}
+                    onChange={(e) => setForm((prev) => ({ ...prev, city: e.target.value }))}
+                    placeholder="Austin"
                     className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
                   />
                 </label>
-              ))}
+                <label className="block text-xs font-medium text-muted-foreground">
+                  State
+                  <select
+                    value={form.state}
+                    onChange={(e) => setForm((prev) => ({ ...prev, state: e.target.value }))}
+                    className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    {US_STATES.map((state) => (
+                      <option key={state.code} value={state.code}>
+                        {state.code}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block text-xs font-medium text-muted-foreground">
+                  ZIP
+                  <input
+                    value={form.zip}
+                    onChange={(e) => setForm((prev) => ({ ...prev, zip: e.target.value.replace(/[^\d-]/g, '').slice(0, 10) }))}
+                    placeholder="78702"
+                    className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </label>
+              </div>
+              <label className="block text-xs font-medium text-muted-foreground">
+                Manager
+                <input
+                  value={form.manager}
+                  onChange={(e) => setForm((prev) => ({ ...prev, manager: e.target.value }))}
+                  placeholder="Elena Cruz"
+                  className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+                />
+              </label>
+              <label className="block text-xs font-medium text-muted-foreground">
+                Phone
+                <input
+                  value={form.phone}
+                  onChange={(e) => setForm((prev) => ({ ...prev, phone: formatUsPhone(e.target.value) }))}
+                  placeholder="(512) 555-0100"
+                  type="tel"
+                  className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+                />
+              </label>
             </div>
             <div className="mt-5 flex justify-end gap-2">
               <button onClick={() => setAddOpen(false)} className="rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-secondary">

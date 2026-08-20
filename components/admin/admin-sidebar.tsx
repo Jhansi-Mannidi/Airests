@@ -17,7 +17,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
   const initials = session?.initials ?? 'EC'
 
   return (
-    <div className="flex h-full w-64 flex-col border-r border-sidebar-border bg-sidebar">
+    <div className="flex h-full min-h-0 w-64 max-w-[88vw] flex-col border-r border-sidebar-border bg-sidebar">
       <div className="flex h-14 shrink-0 items-center justify-between border-b border-sidebar-border px-4 md:h-[4.5rem] md:px-5">
         <Link href="/admin" className="flex items-center" aria-label="Airests Admin">
           <AirestsMark size="lg" />
@@ -29,7 +29,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
         )}
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
+      <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-3 py-3">
         <LayoutGroup id="admin-nav">
         {adminNavItems.map((item, index) => {
           const isActive = item.href === '/admin' ? pathname === '/admin' : pathname.startsWith(item.href)
@@ -66,7 +66,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
         </LayoutGroup>
       </nav>
 
-      <div className="border-t border-sidebar-border p-3">
+      <div className="shrink-0 border-t border-sidebar-border p-3">
         {canSeeAppOverview(role) && (
           <Link
             href="/"

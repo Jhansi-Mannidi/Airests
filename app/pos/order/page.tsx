@@ -106,41 +106,43 @@ function OrderBuildingContent() {
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
         <div className={cn('min-h-0 flex-1 flex-col overflow-hidden', mobileTab === 'menu' ? 'flex' : 'hidden lg:flex')}>
           <div className="border-b border-border bg-card px-3 py-2.5 md:px-6 md:py-3">
-            <CategoryTabs items={[...menuCategories]} value={category} onChange={setCategory} layoutId="pos-menu-category" />
+          <CategoryTabs items={[...menuCategories]} value={category} onChange={setCategory} layoutId="pos-menu-category" />
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto border-b border-border px-3 py-2 md:px-6">
-            <LayoutGroup id="pos-diet">
-              {dietFilters.map((filter) => (
-                <button
-                  key={filter.id}
-                  type="button"
-                  onClick={() => setDietFilter(filter.id)}
-                  className={cn(
-                    'relative inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
-                    dietFilter === filter.id ? 'text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground',
-                  )}
-                >
-                  {dietFilter === filter.id && (
-                    <m.span
-                      layoutId="pos-diet-pill"
-                      className="absolute inset-0 rounded-full bg-primary shadow-sm"
-                      transition={{ type: 'spring', stiffness: 400, damping: 34 }}
-                    />
-                  )}
-                  <span className="relative z-10 inline-flex items-center gap-1.5">
-                    {filter.id !== 'all' && <DietMark diet={filter.id} size="sm" />}
-                    {filter.label}
-                  </span>
-                </button>
-              ))}
-            </LayoutGroup>
-            <div className="relative min-w-[10rem] flex-1 md:max-w-xs">
+          <div className="flex min-w-0 flex-col gap-2 border-b border-border px-3 py-2 md:flex-row md:items-center md:px-6">
+            <div className="flex min-w-0 items-center gap-2 overflow-x-auto no-scrollbar">
+              <LayoutGroup id="pos-diet">
+                {dietFilters.map((filter) => (
+                  <button
+                    key={filter.id}
+                    type="button"
+                    onClick={() => setDietFilter(filter.id)}
+                    className={cn(
+                      'relative inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
+                      dietFilter === filter.id ? 'text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    {dietFilter === filter.id && (
+                      <m.span
+                        layoutId="pos-diet-pill"
+                        className="absolute inset-0 rounded-full bg-primary shadow-sm"
+                        transition={{ type: 'spring', stiffness: 400, damping: 34 }}
+                      />
+                    )}
+                    <span className="relative z-10 inline-flex items-center gap-1.5">
+                      {filter.id !== 'all' && <DietMark diet={filter.id} size="sm" />}
+                      {filter.label}
+                    </span>
+                  </button>
+                ))}
+              </LayoutGroup>
+            </div>
+            <div className="relative min-w-0 w-full md:max-w-xs md:flex-1">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search menu…"
-                className="h-9 w-full rounded-full border border-border bg-background py-1.5 pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                className="h-9 w-full min-w-0 rounded-full border border-border bg-background py-1.5 pl-8 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
           </div>
@@ -152,9 +154,9 @@ function OrderBuildingContent() {
               </p>
             ) : (
               <AnimatePresence mode="wait">
-                <Stagger key={`${category}-${dietFilter}-${query}`} className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4" delay={0.035}>
+                <Stagger key={`${category}-${dietFilter}-${query}`} className="grid grid-cols-2 items-stretch gap-3 sm:grid-cols-3 lg:grid-cols-4" delay={0.035}>
                   {items.map((item) => (
-                    <StaggerItem key={item.id} hover>
+                    <StaggerItem key={item.id} hover className="h-full min-w-0">
                       <m.button
                         type="button"
                         onClick={() => handleItemTap(item)}
@@ -162,11 +164,11 @@ function OrderBuildingContent() {
                         whileHover={item.soldOut ? undefined : { y: -3 }}
                         whileTap={item.soldOut ? undefined : { scale: 0.98 }}
                         className={cn(
-                          'group relative flex w-full flex-col overflow-hidden rounded-xl border border-border bg-card text-left shadow-sm',
+                          'group relative flex h-full w-full min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card text-left shadow-sm',
                           item.soldOut ? 'opacity-60' : 'hover:border-primary/50 hover:shadow-elevated',
                         )}
                       >
-                        <div className="relative h-28 w-full overflow-hidden bg-muted sm:h-36 lg:h-44">
+                        <div className="relative h-24 w-full shrink-0 overflow-hidden bg-muted sm:h-36 lg:h-44">
                           <Image
                             src={item.image || '/placeholder.svg'}
                             alt={item.name}
@@ -180,13 +182,13 @@ function OrderBuildingContent() {
                             </span>
                           )}
                         </div>
-                        <div className="flex flex-1 flex-col gap-1 px-2.5 py-2.5 sm:px-3 sm:py-4">
-                          <p className="line-clamp-2 text-sm font-medium leading-tight text-foreground">{item.name}</p>
+                        <div className="flex min-h-0 flex-1 flex-col gap-1 px-2.5 py-2.5 sm:px-3 sm:py-4">
+                          <p className="line-clamp-2 min-h-[2.5rem] text-sm font-medium leading-tight text-foreground">{item.name}</p>
                           <div className="mt-auto flex items-center justify-between gap-2">
                             <p className="font-mono text-sm font-semibold tabular-nums text-foreground">
                               ${item.price.toFixed(2)}
                             </p>
-                            <DietMark diet={getItemDiet(item)} showLabel size="sm" />
+                            <DietMark diet={getItemDiet(item)} showLabel size="sm" className="shrink-0" />
                           </div>
                         </div>
                       </m.button>
@@ -211,12 +213,12 @@ function OrderBuildingContent() {
           onPay={() => router.push(`/pos/checkout?${ctx.query}`)}
         />
 
-        <div className="grid grid-cols-2 border-t border-border bg-card pb-[env(safe-area-inset-bottom)] lg:hidden">
+        <div className="grid shrink-0 grid-cols-2 border-t border-border bg-card pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden">
           <button
             type="button"
             onClick={() => setMobileTab('menu')}
             className={cn(
-              'flex items-center justify-center gap-2 py-3 text-sm font-semibold',
+              'flex min-h-12 items-center justify-center gap-2 py-3 text-sm font-semibold',
               mobileTab === 'menu' ? 'text-primary' : 'text-muted-foreground',
             )}
           >
@@ -227,7 +229,7 @@ function OrderBuildingContent() {
             type="button"
             onClick={() => setMobileTab('order')}
             className={cn(
-              'flex items-center justify-center gap-2 py-3 text-sm font-semibold',
+              'flex min-h-12 items-center justify-center gap-2 py-3 text-sm font-semibold',
               mobileTab === 'order' ? 'text-primary' : 'text-muted-foreground',
             )}
           >
